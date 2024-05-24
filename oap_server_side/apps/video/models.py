@@ -1,6 +1,6 @@
 from django.db import models
-from apps.models.users import User
-from apps.models.media import Media
+from apps.users.models import User
+from apps.media.models import Media
 
 class Video(models.Model):
     mediaID = models.ForeignKey(Media, on_delete=models.CASCADE)
@@ -23,7 +23,7 @@ class Transcript(models.Model):
     def __str__(self):
         return self.title
 
-class VideoSegment(models.Models):
+class VideoSegment(models.Model):
     VideoID = models.ForeignKey(Video, on_delete=models.CASCADE)
     segmentNumber = models.IntegerField()
     startTime = models.DurationField()

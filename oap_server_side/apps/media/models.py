@@ -1,5 +1,5 @@
 from django.db import models
-from apps.models.users import User
+from apps.users.models import User
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -31,7 +31,7 @@ class Media(models.Model):
     def __str__(self):
         return self.title
 
-class Comment(models.Models):
+class Comment(models.Model):
     mediaID = models.ForeignKey(Media, on_delete=models.CASCADE)
     userID = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.TextField()
@@ -40,7 +40,7 @@ class Comment(models.Models):
     def __str__(self):
         return self.content
     
-class View(models.Models):
+class View(models.Model):
     mediaID = models.ForeignKey(Media, on_delete=models.CASCADE)
     userID = models.ForeignKey(User, on_delete=models.CASCADE)
     viewDate = models.DateTimeField()

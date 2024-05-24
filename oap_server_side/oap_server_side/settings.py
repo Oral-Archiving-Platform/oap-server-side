@@ -37,7 +37,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'apps.media',
+    'apps.users',
+    'apps.video',
+    'apps.playlist',
+    'django_extensions',
 ]
+
+GRAPH_MODELS ={
+'all_applications': True,
+'graph_models': True,
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

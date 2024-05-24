@@ -1,6 +1,6 @@
 from django.db import models
-from apps.models.users import User
-from apps.models.media import Media
+from apps.users.models import User
+from apps.media.models import Media
 
 class Playlist(models.Model):
     name = models.CharField(max_length=100)
