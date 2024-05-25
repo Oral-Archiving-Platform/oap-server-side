@@ -41,6 +41,9 @@ INSTALLED_APPS = [
     'users',
     'django_otp',
     'django_otp.plugins.otp_totp',
+        "rest_framework",
+    'rest_framework.authtoken',
+
 ]
 
 MIDDLEWARE = [
@@ -128,12 +131,9 @@ AUTH_USER_MODEL = 'users.User'  # Ensure this is pointing to your custom user mo
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # settings.py
 REST_FRAMEWORK = {
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
-    ],
-    'DEFAULT_AUTHENTICATION_CLASSES': [
+    'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ],
+    ),
 }
 AUTH_USER_MODEL = 'users.User'  
 
