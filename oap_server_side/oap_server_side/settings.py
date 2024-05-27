@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'users',
     'django_otp',
     'django_otp.plugins.otp_totp',
-        "rest_framework",
+     "rest_framework",
     'rest_framework.authtoken',
 
 ]
@@ -126,7 +126,8 @@ STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
-AUTH_USER_MODEL = 'users.User'  # Ensure this is pointing to your custom user model
+AUTH_USER_MODEL = 'users.User'
+  # Ensure this is pointing to your custom user model
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # settings.py
@@ -135,8 +136,6 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
-AUTH_USER_MODEL = 'users.User'  
-
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60*24*30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
