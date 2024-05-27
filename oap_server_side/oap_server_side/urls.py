@@ -8,5 +8,6 @@ urlpatterns = [
     path('', home, name='home'),
     path('api/m/', include('apps.media.urls')),
     path('api/v/', include('apps.video.urls')),
+    path('api/u/', include('apps.users.urls')),
 
 ]
