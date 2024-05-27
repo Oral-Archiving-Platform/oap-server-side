@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'apps.video',
     'apps.playlist',
     'django_extensions',
+    'rest_framework',
 ]
 
 GRAPH_MODELS ={
