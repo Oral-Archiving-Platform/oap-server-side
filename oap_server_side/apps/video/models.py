@@ -5,6 +5,7 @@ from apps.media.models import Media
 class Video(models.Model):
     mediaID = models.ForeignKey(Media, on_delete=models.CASCADE)
     videoURL = models.URLField()
+    videoFile= models.FileField(default=None)
     thumbnailURL = models.URLField()
     duration = models.DurationField()
     size = models.FloatField()
