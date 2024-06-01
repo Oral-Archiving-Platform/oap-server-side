@@ -12,5 +12,6 @@ urlpatterns = [
     path('api/m/', include('apps.media.urls')),
     path('api/v/', include('apps.video.urls')),
     path('api/u/', include('apps.users.urls')),
+    path('api/p/', include('apps.playlist.urls')),
 
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
