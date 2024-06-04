@@ -1,7 +1,0 @@
-Django>=3.2
-djangorestframework
-django-otp
-Pillow
-djangorestframework-simplejwt
-djangorestframework
-django-cors-headers
