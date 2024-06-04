@@ -3,3 +3,5 @@ djangorestframework
 django-otp
 Pillow
 djangorestframework-simplejwt
+djangorestframework
+django-cors-headers
