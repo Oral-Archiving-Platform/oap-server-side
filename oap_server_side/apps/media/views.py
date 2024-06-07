@@ -7,6 +7,8 @@ from .serializers import CategorySerializer, MediaSerializer, CommentSerializer,
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [IsAdmin]
+
 
 class MediaViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdmin]

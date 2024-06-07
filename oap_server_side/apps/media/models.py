@@ -11,8 +11,10 @@ class Category(models.Model):
 class Media(models.Model):
     VIDEO='1'
     OTHER='2'
+    AUDIO='3'
     ROLE_CHOICES = [
         (VIDEO, 'Video'),
+        (AUDIO, 'Audio'),
         (OTHER, 'Other'),
     ]
 
@@ -26,6 +28,10 @@ class Media(models.Model):
         choices=ROLE_CHOICES,
         default=VIDEO,  
     )
+    rightsStatement = models.TextField(default="")
+    usageStatement = models.TextField(default="")
+    acknowledgement = models.TextField(default="")
+    userNotes = models.TextField(default="")
     originalLanguage = models.CharField(max_length=100)
 
     def __str__(self):

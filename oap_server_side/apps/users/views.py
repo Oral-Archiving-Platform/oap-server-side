@@ -36,6 +36,7 @@ class VerifyTokenView(APIView):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [AllowAny]
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def get_role(self, request):
