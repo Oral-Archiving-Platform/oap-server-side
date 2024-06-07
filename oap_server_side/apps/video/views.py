@@ -1,13 +1,12 @@
-from django.shortcuts import render
-from rest_framework.response import Response
+from ..users.permissions import IsAdmin
 from rest_framework import viewsets
 from .models import Video, Transcript, VideoSegment
 from .serializers import VideoSerializer, TranscriptSerializer, VideoSegmentSerializer
-from rest_framework.parsers import FileUploadParser
 
 class VideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
+    permission_classes = [IsAdmin]
 
 
 class TranscriptViewSet(viewsets.ModelViewSet):

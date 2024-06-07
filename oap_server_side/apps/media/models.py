@@ -9,8 +9,8 @@ class Category(models.Model):
         return self.name
 
 class Media(models.Model):
-    VIDEO=1
-    OTHER=2
+    VIDEO='1'
+    OTHER='2'
     ROLE_CHOICES = [
         (VIDEO, 'Video'),
         (OTHER, 'Other'),

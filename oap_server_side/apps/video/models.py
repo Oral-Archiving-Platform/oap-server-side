@@ -10,7 +10,7 @@ class Video(models.Model):
     duration = models.DurationField()
     size = models.FloatField()
     def __str__(self):
-        return self.name
+        return self.videoURL
 
 class Transcript(models.Model):
     videoID = models.ForeignKey(Video, on_delete=models.CASCADE)

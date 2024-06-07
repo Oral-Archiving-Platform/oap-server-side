@@ -1,15 +1,15 @@
-from django.urls import path
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from django.urls import path,include
+from rest_framework.routers import DefaultRouter
+from rest_framework_simplejwt.views import TokenRefreshView
 
-# from oap_server_side.users import admin
-from .views import UserRegister, VerifyTokenView, TestView, UserRoleView
+from .views import VerifyTokenView, UserViewSet,MyTokenObtainPairView
+
+router = DefaultRouter()
+router.register(r'users', UserViewSet)
 
 urlpatterns = [
-    # path('admin/', admin.site.urls),
-    path('register/', UserRegister.as_view(), name='register'),
-    path('login/', TokenObtainPairView.as_view(), name='login'),
+    path('',include(router.urls)),
+    path('login/', MyTokenObtainPairView.as_view(), name='login'),
     path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('verify/', VerifyTokenView.as_view(), name='token_verify'),
-    path('test/', TestView.as_view(), name='test'),
-    path('role/', UserRoleView.as_view(), name='role'),
 ]

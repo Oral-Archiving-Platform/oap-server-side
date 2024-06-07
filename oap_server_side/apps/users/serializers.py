@@ -1,28 +1,34 @@
 from .models import User
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        token['username'] = user.username
+        token['first_name'] = user.first_name
+        token['last_name'] = user.last_name
+        token['email'] = user.email
+        token['id'] = user.id
+        token['role'] = user.role
+        return token
+    
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['username', 'email','password', 'picture','first_name','last_name']
+        fields = ['username', 'email','password','first_name','last_name','role']
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
         user = User(
             username=validated_data['username'],
             email=validated_data['email'],
-            # picture=validated_data.get('picture'),
             first_name=validated_data.get('first_name'),
             last_name=validated_data.get('last_name'),
-            phone_number=validated_data.get('phone_number'),
-            linkedinurl=validated_data.get('linkedinurl'),
+            role=validated_data.get('role')
         )
         user.set_password(validated_data['password'])
         user.save()
         return user
-
-class UserInfoSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = User
-        fields = ['email', 'first_name', 'last_name', 'role','picture']

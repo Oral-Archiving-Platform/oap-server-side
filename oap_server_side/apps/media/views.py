@@ -1,4 +1,5 @@
-from django.shortcuts import render
+from ..users.permissions import IsAdmin
+
 from rest_framework import viewsets
 from .models import Category, Media, Comment, View
 from .serializers import CategorySerializer, MediaSerializer, CommentSerializer, ViewSerializer
@@ -8,8 +9,11 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
 
 class MediaViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdmin]
     queryset = Media.objects.all()
     serializer_class = MediaSerializer
+    
+
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
