@@ -14,6 +14,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from .models import User
 from .serializers import UserSerializer, MyTokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import AccessToken, TokenError
+from ..users.permissions import IsAdmin
 
 
 
@@ -36,7 +37,8 @@ class VerifyTokenView(APIView):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAdmin]
+
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def get_role(self, request):

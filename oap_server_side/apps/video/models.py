@@ -41,9 +41,20 @@ class Video(models.Model):
 
     def __str__(self):
         return self.videoURL
-
+    
+class VideoSegment(models.Model):
+    VideoID = models.ForeignKey(Video, on_delete=models.CASCADE)
+    segmentNumber = models.IntegerField()
+    startTime = models.DurationField()
+    endTime = models.DurationField()
+    description = models.TextField()
+    
+    def __str__(self):
+        return self.segmentNumber
+    
 class Transcript(models.Model):
-    videoID = models.ForeignKey(Video, on_delete=models.CASCADE)
+    videoID= models.ForeignKey(Video, on_delete=models.CASCADE)
+    videoSegmentID = models.ForeignKey(VideoSegment, on_delete=models.CASCADE, default=None)
     title = models.CharField(max_length=100)
     content = models.TextField()
     transcriberID = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -54,12 +65,4 @@ class Transcript(models.Model):
     def __str__(self):
         return self.title
 
-class VideoSegment(models.Model):
-    VideoID = models.ForeignKey(Video, on_delete=models.CASCADE)
-    segmentNumber = models.IntegerField()
-    startTime = models.DurationField()
-    endTime = models.DurationField()
-    description = models.TextField()
-    
-    def __str__(self):
-        return self.segmentNumber
+

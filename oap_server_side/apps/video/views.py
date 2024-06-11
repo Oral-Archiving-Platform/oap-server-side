@@ -12,7 +12,9 @@ class VideoViewSet(viewsets.ModelViewSet):
 class TranscriptViewSet(viewsets.ModelViewSet):
     queryset = Transcript.objects.all()
     serializer_class = TranscriptSerializer
+    permission_classes = [IsAdmin]
 
 class VideoSegmentViewSet(viewsets.ModelViewSet):
     queryset = VideoSegment.objects.all()
     serializer_class = VideoSegmentSerializer
+    permission_classes = [IsAdmin]

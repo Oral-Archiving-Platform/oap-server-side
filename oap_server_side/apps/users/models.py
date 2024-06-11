@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.utils import timezone
 
 
 class User(AbstractUser):
@@ -16,6 +17,8 @@ class User(AbstractUser):
         choices=ROLE_CHOICES,
         default=USER,  
     )
+
+    dateOfBirth = models.DateField(default=timezone.now())
 
     def __str__(self):
         return self.username
