@@ -3,8 +3,6 @@ from apps.users.models import User
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
-    description = models.TextField()
-
     def __str__(self):
         return self.name
 
@@ -12,7 +10,7 @@ class Media(models.Model):
     VIDEO='1'
     OTHER='2'
     AUDIO='3'
-    ROLE_CHOICES = [
+    TYPE_CHOICES = [
         (VIDEO, 'Video'),
         (AUDIO, 'Audio'),
         (OTHER, 'Other'),
@@ -25,13 +23,10 @@ class Media(models.Model):
     categoryID = models.ForeignKey(Category, on_delete=models.CASCADE)
     type=models.CharField(
         max_length=50,
-        choices=ROLE_CHOICES,
+        choices=TYPE_CHOICES,
         default=VIDEO,  
     )
-    rightsStatement = models.TextField(default="")
-    usageStatement = models.TextField(default="")
     acknowledgement = models.TextField(default="")
-    userNotes = models.TextField(default="")
     originalLanguage = models.CharField(max_length=100)
 
     def __str__(self):

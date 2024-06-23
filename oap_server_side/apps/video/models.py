@@ -25,17 +25,17 @@ class Video(models.Model):
         choices=VIS_CHOICES,
         default=PUB,  
     )
+    location = models.CharField(max_length=100)
     restriction=models.CharField(
         max_length=50,
         choices=RES_CHOICES,
         default=N,  
-    ) #idk what it means
+    ) 
     interviewDate = models.DateField(default=datetime.date.today)
     interviewee= models.CharField(max_length=100,default="")
     interviewer= models.CharField(max_length=100,default="")
     mediaID = models.ForeignKey(Media, on_delete=models.CASCADE)
     videoURL = models.URLField()
-    thumbnailURL = models.URLField()
     duration = models.DurationField()
     size = models.FloatField()
 
@@ -47,7 +47,7 @@ class VideoSegment(models.Model):
     segmentNumber = models.IntegerField()
     startTime = models.DurationField()
     endTime = models.DurationField()
-    description = models.TextField()
+    description = models.TextField() 
     
     def __str__(self):
         return self.segmentNumber
