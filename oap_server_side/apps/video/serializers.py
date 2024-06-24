@@ -4,10 +4,7 @@ from ..media.serializers import MediaSerializer
 from ..media.models import Media
 
 class VideoSerializer(serializers.ModelSerializer):
-    mediaID = serializers.PrimaryKeyRelatedField(
-        queryset=Media.objects.all(),
-        write_only=True
-    )
+
     media_details = MediaSerializer(source='mediaID', read_only=True)
 
     class Meta:

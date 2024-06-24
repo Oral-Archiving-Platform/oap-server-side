@@ -58,6 +58,22 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20,
 
 }
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        '': {  # This captures logs of any logger.
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
 
 
 SIMPLE_JWT = {

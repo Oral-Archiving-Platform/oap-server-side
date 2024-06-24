@@ -34,7 +34,7 @@ class Video(models.Model):
     interviewDate = models.DateField(default=datetime.date.today)
     interviewee= models.CharField(max_length=100,default="")
     interviewer= models.CharField(max_length=100,default="")
-    mediaID = models.ForeignKey(Media, on_delete=models.CASCADE)
+    mediaID = models.ForeignKey(Media, on_delete=models.CASCADE,related_name='video_media')
     videoURL = models.URLField()
     duration = models.DurationField()
     size = models.FloatField()

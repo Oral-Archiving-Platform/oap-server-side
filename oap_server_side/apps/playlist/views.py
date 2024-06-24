@@ -1,36 +1,58 @@
-from django.shortcuts import render,get_object_or_404
 from rest_framework import viewsets
 from .models import PlaylistMedia, Playlist
-from .serializers import PlaylistMediaSerializer,PlaylistSerializer
+from .serializers import PlaylistMediaSerializer,PlaylistSerializer,PlaylistDetailSerializer
 from apps.media.models import Media
-from rest_framework import permissions
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from apps.users.models import User
 from rest_framework.exceptions import PermissionDenied
-
+from .permissions import IsOwnerOrReadOnly
+from django.db.models import Q
 
 class PlaylistViewSet(viewsets.ModelViewSet):
     queryset = Playlist.objects.all()
     serializer_class = PlaylistSerializer
-    """@action(detail=False, methods=['get'], url_path='user-collections')
-    def user_collections(self, request):
-        user = request.user
-        playlists = self.queryset.filter(uploaderID=user, type=Playlist.COLLECTION)
-        serializer = self.get_serializer(playlists, many=True)
-        return Response(serializer.data)
+    permission_classes=[IsOwnerOrReadOnly]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated:
+            return Playlist.objects.filter(
+                Q(privacy_status=Playlist.PUBLIC) |
+                Q(created_by=user)
+            )
+        return Playlist.objects.filter(privacy_status=Playlist.PUBLIC)
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return PlaylistDetailSerializer  # Use detailed serializer for retrieve action taht shows teh associate playlistmedia
+        return PlaylistSerializer
+    #users cannot see a playlist if it is private and they are not the owner
+    #users can only delete a playlist if they are the owner same for update etc
     
-    @action(detail=False, methods=['get'], url_path='user-playlists')
-    def user_playlists(self, request):
-        user = request.user
-        playlists = self.queryset.filter(uploaderID=user, type=Playlist.PLAYLIST)
-        serializer = self.get_serializer(playlists, many=True)
-        return Response(serializer.data)"""
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+    def perform_update(self, serializer):
+        obj = serializer.instance
+        if obj.created_by != self.request.user:
+            raise PermissionDenied("You do not have permission to edit this playlist.")
+        serializer.save()
+    def perform_destroy(self, instance):
+        if instance.created_by != self.request.user:
+            raise PermissionDenied("You do not have permission to delete this playlist.")
+        instance.delete()
+
+
 
 class PlaylistMediaViewSet(viewsets.ModelViewSet):
     queryset = PlaylistMedia.objects.all()
     serializer_class = PlaylistMediaSerializer
-
+    #users can only add media to their own playlists and you can only add media you own to a collection
+    #both playlists and collections can be public or private
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated:
+            return PlaylistMedia.objects.filter(
+                Q(playlist__privacy_status=Playlist.PUBLIC) |
+                Q(playlist__created_by=user)
+            ).prefetch_related('media__video_media')
+        return PlaylistMedia.objects.filter(playlist__privacy_status=Playlist.PUBLIC).prefetch_related('media__video_media')
     def perform_create(self, serializer):
         playlist = serializer.validated_data.get('playlist')
         user = self.request.user

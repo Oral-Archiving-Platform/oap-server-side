@@ -34,7 +34,7 @@ class Playlist(models.Model):
         return self.name
 
 class PlaylistMedia(models.Model):
-    playlist = models.ForeignKey(Playlist, on_delete=models.CASCADE)
+    playlist = models.ForeignKey(Playlist, on_delete=models.CASCADE,related_name='playlist_media_set')
     media = models.ForeignKey(Media, on_delete=models.CASCADE) 
     added_at = models.DateTimeField(auto_now_add=True)
     added_by = models.ForeignKey(User, on_delete=models.CASCADE)
