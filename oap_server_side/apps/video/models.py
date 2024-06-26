@@ -66,3 +66,36 @@ class Transcript(models.Model):
         return self.title
 
 
+class Participant(models.Model):
+    
+    INTERVIEWER = 1
+    INTERVIEWEE = 2
+
+    ROLE_CHOICES = [
+        (INTERVIEWER, 'Interviewer'),
+        (INTERVIEWEE, 'Interviewee'),
+        ]
+
+    VideoId = models.ForeignKey('Video', on_delete=models.CASCADE) 
+    firstName = models.CharField(max_length=255)  
+    lastName = models.CharField(max_length=255, blank=True, null=True)  
+    phoneNumber = models.CharField(max_length=20, blank=True, null=True)  
+    role = models.IntegerField(choices=ROLE_CHOICES)
+
+    def __str__(self):
+        return self.firstName
+    
+
+
+
+
+
+
+
+
+
+
+
+    
+
+   

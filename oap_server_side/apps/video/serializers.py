@@ -1,7 +1,6 @@
 from rest_framework import serializers
-from .models import Video, Transcript, VideoSegment
+from .models import Video, Transcript, VideoSegment,Participant
 from ..media.serializers import MediaSerializer
-from ..media.models import Media
 
 class VideoSerializer(serializers.ModelSerializer):
 
@@ -12,13 +11,15 @@ class VideoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def to_representation(self, instance):
-        """ Modify the output to include detailed media info."""
         representation = super().to_representation(instance)
         media_representation = MediaSerializer(instance.mediaID).data
         representation['media_details'] = media_representation
         return representation
     
-    
+class ParticipantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Participant
+        fields = '__all__'
 
 class TranscriptSerializer(serializers.ModelSerializer):
     class Meta:
