@@ -15,17 +15,6 @@ class VideoViewSet(viewsets.ModelViewSet):
     #uncomment if needed for testing
     # permission_classes = [AllowAny]
 
-class TranscriptViewSet(viewsets.ModelViewSet):
-    queryset = Transcript.objects.all()
-    serializer_class = TranscriptSerializer
-    permission_classes = [IsAdmin]
-
-class VideoSegmentViewSet(viewsets.ModelViewSet):
-    queryset = VideoSegment.objects.all()
-    serializer_class = VideoSegmentSerializer
-    permission_classes = [IsAdmin]
-
-
 #the interview/interviwer function class
 class AddparticipantViewSet(viewsets.ModelViewSet):
     queryset= Participant.objects.all()
