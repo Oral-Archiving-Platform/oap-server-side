@@ -1,6 +1,7 @@
 from ..users.permissions import IsAdmin
 from rest_framework import viewsets
 from rest_framework.response import Response
+from .permissions import IsVideoOwnerOrReadOnly
 
 from .models import Video, Transcript, VideoSegment
 from .serializers import VideoSerializer, TranscriptSerializer, VideoSegmentSerializer
@@ -10,7 +11,7 @@ from rest_framework.permissions import AllowAny
 class VideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsVideoOwnerOrReadOnly]
     
     
 
