@@ -11,9 +11,9 @@ from rest_framework.permissions import AllowAny
 class VideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
-    #add this back when done with testing
-    #permission_classes = [IsVideoOwnerOrReadOnly]
-    permission_classes = [AllowAny]
+    permission_classes = [IsVideoOwnerOrReadOnly]
+    #uncomment if needed for testing
+    # permission_classes = [AllowAny]
 
 class TranscriptViewSet(viewsets.ModelViewSet):
     queryset = Transcript.objects.all()
