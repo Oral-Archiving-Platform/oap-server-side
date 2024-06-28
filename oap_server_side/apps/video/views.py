@@ -34,21 +34,18 @@ class AddparticipantViewSet(viewsets.ModelViewSet):
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response({"message": "Participants added successfully"}, status=status.HTTP_201_CREATED)
-    #queryset to filter by role
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        role = self.request.query_params.get('role')
-        if role in ['interviewer', 'interviewee']:
-            queryset = queryset.filter(role=role)
-        return queryset
-    
-
-    #function to get the participants by role
-    @action(detail=False, methods=['get'])
+#retreive by role and by video id 
+    @action(detail=False, methods=['post'])
     def by_role(self, request):
-        participants = self.get_queryset()
+        role = request.data.get('role')
+        video_id = request.data.get('video_id')
+
+        if not role or not video_id:
+            return Response({"error": "Both role and video_id parameters are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        participants = self.queryset.filter(role=role, VideoId=video_id)
         serializer = ParticipantSerializer(participants, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
 class VideoSegmentViewSet(viewsets.ModelViewSet):
     queryset = VideoSegment.objects.all()
@@ -99,35 +96,39 @@ class VideoSegmentViewSet(viewsets.ModelViewSet):
         serializer = VideoSegmentSerializer(segments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
 # transcript viewset
 class TranscriptViewSet(viewsets.ModelViewSet):
     queryset = Transcript.objects.all()
     serializer_class = TranscriptSerializer
     #the function foe crating transcripts 
+ # Make sure the video exists within the database
     @action(detail=True, methods=['post'])
     def create_transcripts(self, request, video_id):
-        #make sure the video exists within the database
         try:
             video = Video.objects.get(pk=video_id)
         except Video.DoesNotExist:
             return Response({"error": "Video not found"}, status=status.HTTP_404_NOT_FOUND)
+
         transcripts_data = request.data.get('transcripts', [])
         prepared_transcripts = []
+
         for transcript_data in transcripts_data:
-            segment_number = transcript_data.get('segmentNumber')  
+            segment_number = transcript_data.get('segmentNumber')
             try:
                 video_segment = VideoSegment.objects.get(VideoID=video.id, segmentNumber=segment_number)
             except VideoSegment.DoesNotExist:
-                return Response({"error": f"Segment number '{segment_number}' does not exist for this video."},
-                                status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": f"Segment number '{segment_number}' does not exist for this video."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             prepared_transcript = {
                 'videoID': video.id,
-                'VideoSegmentID': video_segment.id, 
+                'videoSegmentID': video_segment.id,
                 'title': transcript_data.get('title'),
                 'content': transcript_data.get('content'),
-                'transcriberID': request.user.id, 
-                'transcriptDate': datetime.now(),  
+                'transcriberID': request.user.id,  # Assuming user is authenticated
+                'transcriptDate': datetime.now(),  # Set the current date and time
                 'transcription': transcript_data.get('transcription'),
                 'transcriptionLanguage': transcript_data.get('transcriptionLanguage'),
             }
@@ -139,7 +140,8 @@ class TranscriptViewSet(viewsets.ModelViewSet):
             return Response({"message": "Transcripts added successfully"}, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    #function to get the transcript based on the video id 
+        
+    #this is a function to retrieve transcripts of a specific video
     @action(detail=True, methods=['get'])
     def get_transcripts(self, request, video_id):
         try:

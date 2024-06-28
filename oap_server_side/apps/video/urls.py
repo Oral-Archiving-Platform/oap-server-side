@@ -9,7 +9,7 @@ router.register(r'transcript', TranscriptViewSet,basename='transcript')
 urlpatterns = [
     path('', include(router.urls)),
     path('videos/<int:video_id>/add_interviewers/', AddparticipantViewSet.as_view({'post': 'create'}), name='AddparticipantViewSet'),
-    path('videos/participants/by-role/', AddparticipantViewSet.as_view({'get': 'by_role'}), name='get_participants_by_role'),
+    path('videos/participants/by_role_and_video/', AddparticipantViewSet.as_view({'get': 'by_role'}), name='get_participants_by_role'),
     path('videos/<int:video_id>/add-segments/', VideoSegmentViewSet.as_view({'post': 'create_video_segment'}), name='create_video_segment'),
     path('videos/<int:video_id>/segments/', VideoSegmentViewSet.as_view({'get': 'get_segments'}), name='get_video_segments'),
     path('videos/<int:video_id>/transcripts/', TranscriptViewSet.as_view({'get': 'get_transcripts'}), name='get_video_transcripts'),
