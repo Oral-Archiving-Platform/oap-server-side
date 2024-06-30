@@ -14,6 +14,21 @@ class VideoViewSet(viewsets.ModelViewSet):
     permission_classes = [IsVideoOwnerOrReadOnly]
     #uncomment if needed for testing
     # permission_classes = [AllowAny]
+    def create(self, request, *args, **kwargs):
+        # Extract categoryID and check if it's a dictionary (to create a new category)
+        media_data = request.data.get('mediaID')
+        if isinstance(category_data, dict):
+            # Create a new category
+            category_serializer = CategorySerializer(data=category_data)
+            if category_serializer.is_valid():
+                category = category_serializer.save()
+                # Replace the categoryID in the request data with the new category's ID
+                request.data['categoryID'] = category.id
+            else:
+                return Response(category_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # Proceed with media creation
+        return super().create(request, *args, **kwargs)
 
 #the interview/interviwer function class
 class AddparticipantViewSet(viewsets.ModelViewSet):
