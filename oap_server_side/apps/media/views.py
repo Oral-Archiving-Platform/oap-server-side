@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from .models import Category, Media, Comment, View
 from .serializers import CategorySerializer, MediaSerializer, CommentSerializer, ViewSerializer
 from .services import create_media_with_category
+from django.db import transaction
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
@@ -19,11 +20,14 @@ class MediaViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         #use a service to create media with category
-        media, errors = create_media_with_category(request.data, request.data.get('categoryID'))
-        if errors:
-            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
-        return Response(MediaSerializer(media).data, status=status.HTTP_201_CREATED)
-        
+        with transaction.atomic():
+
+            media, errors = create_media_with_category(request.data, request.data.get('categoryID'))
+            if errors:
+                transaction.set_rollback(True)
+                return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(MediaSerializer(media).data, status=status.HTTP_201_CREATED)
+            
     
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()

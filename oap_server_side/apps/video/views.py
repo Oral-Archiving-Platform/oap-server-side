@@ -7,28 +7,62 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from datetime import datetime
 from rest_framework.permissions import AllowAny
+from ..media.services import create_media_with_category
+from django.db import transaction
+
 
 class VideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
     permission_classes = [IsVideoOwnerOrReadOnly]
     #uncomment if needed for testing
-    # permission_classes = [AllowAny]
-    def create(self, request, *args, **kwargs):
-        # Extract categoryID and check if it's a dictionary (to create a new category)
-        media_data = request.data.get('mediaID')
-        if isinstance(category_data, dict):
-            # Create a new category
-            category_serializer = CategorySerializer(data=category_data)
-            if category_serializer.is_valid():
-                category = category_serializer.save()
-                # Replace the categoryID in the request data with the new category's ID
-                request.data['categoryID'] = category.id
-            else:
-                return Response(category_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    #permission_classes = [AllowAny]
+    
+    @action(detail=False, methods=['post'], url_path='create-complex-video')
+    def create_complex_video(self, request, *args, **kwargs):
 
-        # Proceed with media creation
-        return super().create(request, *args, **kwargs)
+        with transaction.atomic(): 
+            try:
+                video_data=request.data.get('video')
+                participants=request.data.get('participants')
+                media_data = video_data.get('mediaID')
+
+                media, media_errors = create_media_with_category(media_data, media_data.get('categoryID'))
+                if media_errors:  
+                    raise ValueError("Media creation failed", media_errors)
+
+                video_data['mediaID']=media.id
+                video_serializer=VideoSerializer(data=video_data)
+                
+                if not video_serializer.is_valid():
+                    raise ValueError("Video data validation failed", video_serializer.errors)
+
+                video = video_serializer.save()
+                participant_errors = []
+
+                for participant in participants:
+                    participant['VideoId'] = video.id
+                    participant_serializer = ParticipantSerializer(data=participant)
+
+                    if participant_serializer.is_valid():                        
+                        participant_serializer.save()
+                    else:
+                        participant_errors.append(participant_serializer.errors)
+
+
+                if participant_errors:
+                    
+                    raise ValueError("Participant data validation failed", participant_errors)                   
+
+                return Response(video_serializer.data, status=status.HTTP_201_CREATED)
+            except ValueError as e:
+                transaction.set_rollback(True)
+                return Response({
+                    'error': str(e.args[0]),
+                    'details': e.args[1]
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            
 
 #the interview/interviwer function class
 class AddparticipantViewSet(viewsets.ModelViewSet):
@@ -167,3 +201,7 @@ class TranscriptViewSet(viewsets.ModelViewSet):
         transcripts = Transcript.objects.filter(videoID=video)
         serializer = TranscriptSerializer(transcripts, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class ParticipantViewSet(viewsets.ModelViewSet):
+    queryset = Participant.objects.all()
+    serializer_class = ParticipantSerializer
