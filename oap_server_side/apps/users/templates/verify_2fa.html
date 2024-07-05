@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verify 2FA</title>
+</head>
+<body>
+    <h1>Enter the code from your authenticator app</h1>
+    <form method="post">
+        {% csrf_token %}
+        <input type="text" name="token" placeholder="Enter 6-digit code">
+        <button type="submit">Verify</button>
+    </form>
+    {% if error %}
+    <p style="color: red;">{{ error }}</p>
+    {% endif %}
+</body>
+</html>

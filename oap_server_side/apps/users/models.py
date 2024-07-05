@@ -1,8 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
-
+from django_otp.models import Device
 
 class User(AbstractUser):
+  
     ADMIN = 1
     USER= 0
 

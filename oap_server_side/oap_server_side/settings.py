@@ -43,7 +43,22 @@ INSTALLED_APPS = [
     'apps.playlist',
     'django_extensions',
     'rest_framework',
+     'django_otp',
+    'django_otp.plugins.otp_totp',
+    'two_factor',
+    'two_factor.plugins.phonenumber',
+    'django.contrib.sites',
+    'rest_framework_simplejwt.token_blacklist',
+    'corsheaders',
+      
+    'phonenumber_field',  # This line is important to add
+   
 ]
+
+
+SITE_ID = 1
+
+
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
@@ -86,6 +101,23 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
+
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+# If you want to allow all origins, you can use:
+# CORS_ALLOW_ALL_ORIGINS = True
+
+# Allowing specific HTTP methods if needed
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
 
 GRAPH_MODELS ={
 'all_applications': True,
@@ -101,9 +133,15 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',  
-
+    'django_otp.middleware.OTPMiddleware',
 ]
 
+# CORS settings
+CORS_ALLOW_ALL_ORIGINS = True
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',  # default
+    'django_otp.plugins.otp_totp.models.TOTPDevice',
+)
 AUTH_USER_MODEL = 'users.User'  
 
 ROOT_URLCONF = 'oap_server_side.urls'
@@ -118,6 +156,7 @@ TEMPLATES = [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
+                
                 'django.contrib.messages.context_processors.messages',
             ],
         },
