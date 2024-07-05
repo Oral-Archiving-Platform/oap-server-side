@@ -63,7 +63,10 @@ class VideoViewSet(viewsets.ModelViewSet):
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             
-
+class ParticipantViewSet(viewsets.ModelViewSet):
+    queryset = Participant.objects.all()
+    serializer_class = ParticipantSerializer
+    
 #the interview/interviwer function class
 class AddparticipantViewSet(viewsets.ModelViewSet):
     queryset= Participant.objects.all()
@@ -202,6 +205,3 @@ class TranscriptViewSet(viewsets.ModelViewSet):
         serializer = TranscriptSerializer(transcripts, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-class ParticipantViewSet(viewsets.ModelViewSet):
-    queryset = Participant.objects.all()
-    serializer_class = ParticipantSerializer
