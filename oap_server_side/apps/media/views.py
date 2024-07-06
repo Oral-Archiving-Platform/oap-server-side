@@ -32,6 +32,9 @@ class MediaViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    #to remove if you want replies to show also as independent instances:
+    def get_queryset(self):
+        return Comment.objects.filter(parent__isnull=True)
 
 class ViewViewSet(viewsets.ModelViewSet):
     queryset = View.objects.all()

@@ -66,7 +66,7 @@ class VideoViewSet(viewsets.ModelViewSet):
 class ParticipantViewSet(viewsets.ModelViewSet):
     queryset = Participant.objects.all()
     serializer_class = ParticipantSerializer
-    
+     
 #the interview/interviwer function class
 class AddparticipantViewSet(viewsets.ModelViewSet):
     queryset= Participant.objects.all()

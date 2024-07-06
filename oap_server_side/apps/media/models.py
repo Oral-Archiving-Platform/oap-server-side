@@ -1,5 +1,6 @@
 from django.db import models
 from apps.users.models import User
+from django.utils import timezone
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -32,14 +33,6 @@ class Media(models.Model):
     def __str__(self):
         return self.title
 
-class Comment(models.Model):
-    mediaID = models.ForeignKey(Media, on_delete=models.CASCADE)
-    userID = models.ForeignKey(User, on_delete=models.CASCADE)
-    content = models.TextField()
-    commentDate = models.DateTimeField()
-
-    def __str__(self):
-        return self.content
     
 class View(models.Model):
     mediaID = models.ForeignKey(Media, on_delete=models.CASCADE)
@@ -49,3 +42,16 @@ class View(models.Model):
     def __str__(self):
         return self.viewDate
     
+class Comment(models.Model):
+    mediaID = models.ForeignKey(Media, related_name='comments',on_delete=models.CASCADE)
+    userID = models.ForeignKey(User, related_name='user_comments',on_delete=models.CASCADE)
+    body = models.TextField()
+    created = models.DateTimeField(auto_now_add=True)#svaed just when object is created
+    updated = models.DateTimeField(auto_now=True) #changed whenever object saved
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='replies',on_delete=models.CASCADE)
+
+    class Meta:
+        ordering = ('created',)
+
+    def __str__(self):
+        return self.body
