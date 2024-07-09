@@ -2,8 +2,8 @@ from ..users.permissions import IsAdmin
 from .permissions import IsOwnerOrReadOnly
 from rest_framework import viewsets,status
 from rest_framework.response import Response
-from .models import Category, Media, Comment, View
-from .serializers import CategorySerializer, MediaSerializer, CommentSerializer, ViewSerializer
+from .models import Category, Media, Comment, View, Like
+from .serializers import CategorySerializer, MediaSerializer, CommentSerializer, ViewSerializer, LikeSerializer
 from .services import create_media_with_category
 from django.db import transaction
 
@@ -39,3 +39,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 class ViewViewSet(viewsets.ModelViewSet):
     queryset = View.objects.all()
     serializer_class = ViewSerializer
+
+class LikeViewSet(viewsets.ModelViewSet):
+    queryset = Like.objects.all()
+    serializer_class = LikeSerializer

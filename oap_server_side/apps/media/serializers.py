@@ -1,16 +1,33 @@
 from rest_framework import serializers
-from .models import Category, Media, Comment, View
+from .models import Category, Media, Comment, View, Like
+
+
+class LikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Like
+        fields = '__all__'
 
 class MediaSerializer(serializers.ModelSerializer):
+    likes = serializers.SerializerMethodField()#add a new field to the serializer read-only ,calls a method on the serializer class it is attached to.
+    views = serializers.SerializerMethodField()
+
+
     class Meta:
         model = Media
         fields = '__all__'
+
+    def get_likes(self, obj):
+        return Like.objects.filter(mediaID=obj).count()
+    
+    def get_views(self, obj):
+        return View.objects.filter(mediaID=obj).count()
     
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = '__all__'
+
 
 class RecursiveField(serializers.Serializer):
     def to_representation(self, value):

@@ -40,7 +40,15 @@ class View(models.Model):
     viewDate = models.DateTimeField()
 
     def __str__(self):
-        return self.viewDate
+        return "View"
+    
+class Like(models.Model):
+    mediaID = models.ForeignKey(Media, on_delete=models.CASCADE)
+    userID = models.ForeignKey(User, on_delete=models.CASCADE)
+    likeDate = models.DateTimeField()
+
+    def __str__(self):
+        return "Like"
     
 class Comment(models.Model):
     mediaID = models.ForeignKey(Media, related_name='comments',on_delete=models.CASCADE)

@@ -6,6 +6,7 @@ class VideoSerializer(serializers.ModelSerializer):
 
     media_details = MediaSerializer(source='mediaID', read_only=True)
 
+
     class Meta:
         model = Video
         fields = '__all__'
