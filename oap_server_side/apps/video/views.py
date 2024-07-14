@@ -7,6 +7,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from datetime import datetime
 from rest_framework.permissions import AllowAny
+from django.db import transaction
+
 
 class VideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all()
@@ -68,7 +70,6 @@ class VideoSegmentViewSet(viewsets.ModelViewSet):
             if VideoSegment.objects.filter(VideoID=video.id, segmentNumber=segment_number).exists():
                 return Response({"error": f"A segment with segmentNumber {segment_number} already exists for this video."},
                                 status=status.HTTP_400_BAD_REQUEST)
-            
             # check if segmentNumber is unique within the request data
             if segment_number in seen_segment_numbers:
                 return Response({"error": f"Duplicate segmentNumber '{segment_number}' found in the request."},
@@ -152,13 +153,8 @@ class TranscriptViewSet(viewsets.ModelViewSet):
         transcripts = Transcript.objects.filter(videoID=video)
         serializer = TranscriptSerializer(transcripts, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
 
-from datetime import datetime
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework import status
-from django.db import transaction
+#this is the added segment viewset 
 class complexSegementViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all()
     serializer_class = VideoSerializer

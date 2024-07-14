@@ -5,9 +5,11 @@ from apps.media.models import Media
 class Playlist(models.Model):
     PLAYLIST='0'
     COLLECTION='1'
+    WATCHLATER = '2'
     TYPE_CHOICES = [
         (PLAYLIST, 'Playlist'),
         (COLLECTION, 'Collection'),
+        (WATCHLATER,'Watch-later'),
     ]
     PUBLIC='0'
     PRIVATE='1'

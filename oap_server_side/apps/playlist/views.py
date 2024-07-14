@@ -1,16 +1,18 @@
 from rest_framework import viewsets
 from .models import PlaylistMedia, Playlist
 from .serializers import PlaylistMediaSerializer,PlaylistSerializer,PlaylistDetailSerializer
-from apps.media.models import Media
+from apps.media.models import Media,User
 from rest_framework.exceptions import PermissionDenied
 from .permissions import IsOwnerOrReadOnly
 from django.db.models import Q
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.decorators import action
 
 class PlaylistViewSet(viewsets.ModelViewSet):
     queryset = Playlist.objects.all()
     serializer_class = PlaylistSerializer
     permission_classes=[IsOwnerOrReadOnly]
-
     def get_queryset(self):
         user = self.request.user
         if user.is_authenticated:
@@ -24,10 +26,15 @@ class PlaylistViewSet(viewsets.ModelViewSet):
             return PlaylistDetailSerializer  # Use detailed serializer for retrieve action taht shows teh associate playlistmedia
         return PlaylistSerializer
     #users cannot see a playlist if it is private and they are not the owner
-    #users can only delete a playlist if they are the owner same for update etc
-    
+    #users can only delete a playlist if they are the owner same for update etc   
     def perform_create(self, serializer):
+        user = self.request.user
+        playlist_type = serializer.validated_data.get('type')
+        #cannot create playlists of type watchlater
+        if playlist_type == Playlist.WATCHLATER :
+            raise PermissionDenied("You already have a Watch Later playlist.")
         serializer.save(created_by=self.request.user)
+
     def perform_update(self, serializer):
         obj = serializer.instance
         if obj.created_by != self.request.user:
@@ -36,10 +43,64 @@ class PlaylistViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         if instance.created_by != self.request.user:
             raise PermissionDenied("You do not have permission to delete this playlist.")
+        #assuming that watch later playlist cannot deleted
+        if instance.type == Playlist.WATCHLATER:
+            raise PermissionDenied("You cannot delete a Watch Later playlist.")
         instance.delete()
 
+    #get the playlists of a specific userA requested by userB
 
+    @action(detail=False, methods=['get'])
+    def user_playlists(self, request):
+        # Get the user ID from the request data
+        user_id = request.data.get('user_id')
+        if not user_id:
+            return Response({"error": "User ID is required."}, status=400)
+        try:
+            user_b = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=404)
+        # Check if the requester is authenticated
+        user_a = self.request.user
+        if not user_a.is_authenticated:
+            return Response({"error": "Authentication required."}, status=401)
+        # Fetch the private playlists of user B
+        playlists = Playlist.objects.filter(created_by=user_b, privacy_status=Playlist.PUBLIC)
+        # Serialize the playlists
+        serializer = self.get_serializer(playlists, many=True)
+        return Response(serializer.data)
+    
+    # types : collection : cannot add videos that are not urs
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def user_media(self, request):
+        # Get the user ID and playlist ID from the request parameters 
+        user_id = request.data.get('user_id')
+        playlist_id = request.data.get('playlist_id')
+        
+        # Validate IDs
+        if not user_id or not playlist_id:
+            return Response({"error": "Both User ID and Playlist ID are required."}, status=400)
+        
+        try:
+            user_b = User.objects.get(id=user_id)
 
+            playlist = Playlist.objects.get(id=playlist_id,created_by=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=404)
+        except Playlist.DoesNotExist:
+            return Response({"error": "Playlist not found."}, status=404)
+        # Check if the requester is authenticated
+        user_a = self.request.user
+        if not user_a.is_authenticated:
+            return Response({"error": "Authentication required."}, status=401)
+        # Check permissions to access the playlist's media
+        if not (playlist.privacy_status == Playlist.PUBLIC or playlist.created_by == user_a or user_a == user_b):
+            return Response({"error": "You do not have permission to access media in this playlist."}, status=403)
+        # Fetch the media of the playlist
+        media = PlaylistMedia.objects.filter(playlist=playlist)
+        serializer = PlaylistMediaSerializer(media, many=True)
+        return Response(serializer.data)
+        
 class PlaylistMediaViewSet(viewsets.ModelViewSet):
     queryset = PlaylistMedia.objects.all()
     serializer_class = PlaylistMediaSerializer
@@ -58,7 +119,17 @@ class PlaylistMediaViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if playlist.created_by != user:
             raise PermissionDenied("You are not the owner of this playlist.")
-        
+        #if watch later exists add the media to it, otherwise create it 
+        if playlist.type == Playlist.WATCHLATER:
+            watch_later_playlist = Playlist.objects.filter(created_by=user, type=Playlist.WATCHLATER).first()
+            if not watch_later_playlist:
+                watch_later_playlist = Playlist.objects.create(
+                    name="Watch Later",
+                    description="Automatically created Watch Later playlist",
+                    type=Playlist.WATCHLATER,
+                    privacy_status=Playlist.PRIVATE,  # Example privacy status, adjust as needed
+                    created_by=user
+                )
         if playlist.type == Playlist.COLLECTION:
             media = Media.objects.filter(uploaderID=user)
             if serializer.validated_data['media'] not in media:
