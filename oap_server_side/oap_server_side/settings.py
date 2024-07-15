@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'apps.playlist',
     'django_extensions',
     'rest_framework',
+    'corsheaders',
 ]
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
@@ -123,7 +124,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',  
 
+
 ]
+CORS_ALLOW_ALL_ORIGINS = True  # For development purposes only
 
 AUTH_USER_MODEL = 'users.User'  
 
