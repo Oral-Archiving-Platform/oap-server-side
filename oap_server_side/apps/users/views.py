@@ -1,17 +1,14 @@
 from rest_framework.views import APIView
-from rest_framework import permissions, status
+from rest_framework import status, viewsets
 from rest_framework.response import Response
-from .serializers import UserSerializer, UserInfoSerializer
-from .models import User
 from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenVerifySerializer
+from rest_framework_simplejwt.serializers import TokenVerifySerializer, TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import AccessToken, TokenError
 from rest_framework.generics import ListAPIView
-from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from django.contrib.auth import logout as auth_logout, login as auth_login, authenticate
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from django.http import JsonResponse
 import qrcode
 import base64
@@ -21,41 +18,27 @@ import pyotp
 from datetime import datetime
 import logging
 
+from .serializers import UserSerializer, UserInfoSerializer, MyTokenObtainPairSerializer
+from .models import User
+from ..users.permissions import IsAdmin
+
 logger = logging.getLogger(__name__)
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    permission_classes = [AllowAny]
+    serializer_class = UserSerializer
+    permission_classes = [IsAdmin]
 
     def get_serializer_class(self):
-        if self.action == 'list' or self.action == 'retrieve':
+        if self.action in ['list', 'retrieve']:
             return UserInfoSerializer
         return UserSerializer
 
-class IsAdminUser(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated and request.user.role == 'admin')
-
-class UserList(ListAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]  # Ensure proper permissions
-
-class VerifyTokenView(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        serializer = TokenVerifySerializer(data=request.data)
-        try:
-            serializer.is_valid(raise_exception=True)
-            return Response({'valid': True}, status=status.HTTP_200_OK)
-        except TokenError as e:
-            return Response({'valid': False, 'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-class UserRoleView(APIView):
-    permission_classes = [IsAuthenticated]  
-
-    def post(self, request):
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def get_role(self, request):
+        """
+        Returns the user role based on the provided authorization token.
+        """
         token = request.headers.get('Authorization', None)
         if not token:
             return Response({'error': 'Authorization token is required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -69,6 +52,30 @@ class UserRoleView(APIView):
             return Response({'error': 'Invalid token or token has expired', 'details': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
         except IndexError:
             return Response({'error': 'Invalid token format'}, status=status.HTTP_400_BAD_REQUEST)
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        logger.info(f"Attempting login for user: {username}")
+
+        response = super().post(request, *args, **kwargs)
+
+        user = authenticate(username=username, password=password)
+        if user:
+            auth_login(request, user)
+            if not user.is_2fa_completed:
+                request.session['2fa_user_id'] = user.id
+                logger.info(f"User {username} requires 2FA verification.")
+                return JsonResponse({'message': '2FA required'}, status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                logger.info(f"User {username} logged in successfully.")
+        else:
+            logger.error(f"Failed to authenticate user: {username}")
+
+        return response
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -87,31 +94,21 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
             logger.info(f"TOTP device created during login for user: {user.username}")
         return token
 
-class MyTokenObtainPairView(TokenObtainPairView):
-    serializer_class = MyTokenObtainPairSerializer
+class VerifyTokenView(APIView):
+    permission_classes = [AllowAny]
 
-    def post(self, request, *args, **kwargs):
-        from django.contrib.auth import authenticate, login  # Import here to avoid circular import
-        username = request.data.get('username')
-        password = request.data.get('password')
-        logger.info(f"Attempting login for user: {username} with password: {password}")
+    def post(self, request):
+        serializer = TokenVerifySerializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+            return Response({'valid': True}, status=status.HTTP_200_OK)
+        except TokenError as e:
+            return Response({'valid': False, 'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        response = super().post(request, *args, **kwargs)
-        
-        user = authenticate(username=username, password=password)
-        if user:
-            auth_login(request, user)
-            if not user.is_2fa_completed:
-                # Force 2FA if not completed
-                request.session['2fa_user_id'] = user.id  # Store user ID in session for 2FA
-                logger.info(f"User {username} requires 2FA verification.")
-                return JsonResponse({'message': '2FA required'}, status=status.HTTP_401_UNAUTHORIZED)
-            else:
-                logger.info(f"User {username} logged in successfully.")
-        else:
-            logger.error(f"Failed to authenticate user: {username}")
-
-        return response
+class UserList(ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
 
 class UserRegister(APIView):
     permission_classes = [AllowAny]
@@ -135,7 +132,7 @@ class TestView(APIView):
 def generate_qr_code(request):
     user = request.user
     logger.debug(f"User for QR Code generation: {user.username}")
-    
+
     totp_device, created = TOTPDevice.objects.get_or_create(user=user, name='default')
     if created:
         totp_device.save()
@@ -175,7 +172,7 @@ def verify_2fa(request):
     token = request.data.get('token')
     user = request.user
     logger.debug(f"Username for 2FA: {user.username}")
-    
+
     try:
         totp_device = TOTPDevice.objects.get(user=user, name='default')
         secret = base64.b32encode(totp_device.bin_key).decode('utf-8')
