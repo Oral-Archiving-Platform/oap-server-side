@@ -1,6 +1,4 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-venv/
 venv
+apps\__pycache__
+apps\__pycache__\__init__.cpython-36.pyc
+__pycache__
