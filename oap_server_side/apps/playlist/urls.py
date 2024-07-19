@@ -9,7 +9,7 @@ router.register(r'playlist_media', PlaylistMediaViewSet,basename='playlist_media
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('playlist/user_playlists/', PlaylistViewSet.as_view({'get': 'user_playlists'}), name='user_playlists'),
+    #path('playlist/user_playlists/', PlaylistViewSet.as_view({'get': 'user_playlists'}), name='user_playlists'),
     #path('playlist/user_media/', PlaylistViewSet.as_view({'get': 'user_media'}), name='user_media'),
     path('playlist/all_media/',PlaylistMediaViewSet.as_view({'get':'get_channel_videos'}),name='get_channel_videos'),
     path('playlist/playlist_by_role/', PlaylistViewSet.as_view({'get': 'get_by_Role'}), name='get_by_Role'),
