@@ -1,4 +1,3 @@
-# services.py
 from .serializers import MediaSerializer, CategorySerializer
 
 def create_media_with_category(media_data, category_data=None):
@@ -11,6 +10,8 @@ def create_media_with_category(media_data, category_data=None):
             media_data['categoryID'] = category.id
         else:
             return None, category_serializer.errors
+    
+    print("idk",media_data)
 
     media_serializer = MediaSerializer(data=media_data)
     if media_serializer.is_valid():
