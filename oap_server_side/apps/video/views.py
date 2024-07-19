@@ -1,8 +1,8 @@
 from ..users.permissions import IsAdmin
-from rest_framework import viewsets,status
+from rest_framework import viewsets, status
 from .permissions import IsVideoOwnerOrReadOnly
 from .models import Video, Transcript, VideoSegment, Participant
-from .serializers import VideoSerializer, TranscriptSerializer, VideoSegmentSerializer,ParticipantSerializer
+from .serializers import VideoSerializer, TranscriptSerializer, VideoSegmentSerializer, ParticipantSerializer
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from datetime import datetime
@@ -15,24 +15,24 @@ class VideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
     permission_classes = [IsVideoOwnerOrReadOnly]
-    #uncomment if needed for testing
-    #permission_classes = [AllowAny]
+    # Uncomment if needed for testing
+    # permission_classes = [AllowAny]
     
     @action(detail=False, methods=['post'], url_path='create-complex-video')
     def create_complex_video(self, request, *args, **kwargs):
 
         with transaction.atomic(): 
             try:
-                video_data=request.data.get('video')
-                participants=request.data.get('participants')
+                video_data = request.data.get('video')
+                participants = request.data.get('participants')
                 media_data = video_data.get('mediaID')
 
                 media, media_errors = create_media_with_category(media_data, media_data.get('categoryID'))
                 if media_errors:  
                     raise ValueError("Media creation failed", media_errors)
 
-                video_data['mediaID']=media.id
-                video_serializer=VideoSerializer(data=video_data)
+                video_data['mediaID'] = media.id
+                video_serializer = VideoSerializer(data=video_data)
                 
                 if not video_serializer.is_valid():
                     raise ValueError("Video data validation failed", video_serializer.errors)
@@ -51,7 +51,6 @@ class VideoViewSet(viewsets.ModelViewSet):
 
 
                 if participant_errors:
-                    
                     raise ValueError("Participant data validation failed", participant_errors)                   
 
                 return Response(video_serializer.data, status=status.HTTP_201_CREATED)
@@ -67,17 +66,19 @@ class ParticipantViewSet(viewsets.ModelViewSet):
     queryset = Participant.objects.all()
     serializer_class = ParticipantSerializer
      
-#the interview/interviwer function class
+# The interview/interviewer function class
 class AddparticipantViewSet(viewsets.ModelViewSet):
-    queryset= Participant.objects.all()
+    queryset = Participant.objects.all()
+    
     def create(self, request, video_id):
-        #check if video exists 
+        # Check if video exists 
         try:
             video = Video.objects.get(pk=video_id)
         except Video.DoesNotExist:
             return Response({"error": "Video not found"}, status=status.HTTP_404_NOT_FOUND)
+        
         participants_data = request.data.get('participants', [])
-        #serialize the participant data and store it
+        # Serialize the participant data and store it
         for participant_data in participants_data:
             participant_data['VideoId'] = video.id  # Set the foreign key to the existing video id
             serializer = ParticipantSerializer(data=participant_data)
@@ -85,8 +86,10 @@ class AddparticipantViewSet(viewsets.ModelViewSet):
                 serializer.save()
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
         return Response({"message": "Participants added successfully"}, status=status.HTTP_201_CREATED)
-#retreive by role and by video id 
+    
+    # Retrieve by role and by video id 
     @action(detail=False, methods=['post'])
     def by_role(self, request):
         role = request.data.get('role')
@@ -102,33 +105,37 @@ class AddparticipantViewSet(viewsets.ModelViewSet):
 class VideoSegmentViewSet(viewsets.ModelViewSet):
     queryset = VideoSegment.objects.all()
     serializer_class = VideoSegmentSerializer
-    #function to cfreate video segment and save them even as a bulk
+    
+    # Function to create video segment and save them even as a bulk
     @action(detail=True, methods=['post'])
     def create_video_segment(self, request, video_id):
-        #see if video exists in database based on the video_id
+        # See if video exists in database based on the video_id
         try:
             video = Video.objects.get(pk=video_id)
         except Video.DoesNotExist:
             return Response({"error": "Video not found"}, status=status.HTTP_404_NOT_FOUND)
+        
         segments_data = request.data.get('segments', [])
-        # collect existing segment numbers for the given video_id
+        # Collect existing segment numbers for the given video_id
         existing_segment_numbers = set(VideoSegment.objects.filter(VideoID=video_id).values_list('segmentNumber', flat=True))
         seen_segment_numbers = set()
+        
         for segment_data in segments_data:
             segment_number = segment_data.get('segmentNumber')
-            #make sure that the segemnt numbers to be received are unique within database
+            # Make sure that the segment numbers to be received are unique within the database
             if VideoSegment.objects.filter(VideoID=video.id, segmentNumber=segment_number).exists():
                 return Response({"error": f"A segment with segmentNumber {segment_number} already exists for this video."},
                                 status=status.HTTP_400_BAD_REQUEST)
-            
-            # check if segmentNumber is unique within the request data
+            # Check if segmentNumber is unique within the request data
             if segment_number in seen_segment_numbers:
                 return Response({"error": f"Duplicate segmentNumber '{segment_number}' found in the request."},
                                 status=status.HTTP_400_BAD_REQUEST)
+            
             seen_segment_numbers.add(segment_number)            
-            # prepare segment for bulk creation
+            # Prepare segment for bulk creation
             segment_data['VideoID'] = video.id
-        # bulk create the segments in the database
+        
+        # Bulk create the segments in the database
         serializer = VideoSegmentSerializer(data=segments_data, many=True)
         if serializer.is_valid():
             serializer.save()
@@ -136,7 +143,7 @@ class VideoSegmentViewSet(viewsets.ModelViewSet):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-    #function for retrevieve segements 
+    # Function for retrieving segments 
     @action(detail=True, methods=['get'])
     def get_segments(self, request, video_id):
         try:
@@ -148,12 +155,12 @@ class VideoSegmentViewSet(viewsets.ModelViewSet):
         serializer = VideoSegmentSerializer(segments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-# transcript viewset
+# Transcript viewset
 class TranscriptViewSet(viewsets.ModelViewSet):
     queryset = Transcript.objects.all()
     serializer_class = TranscriptSerializer
-    #the function foe crating transcripts 
- # Make sure the video exists within the database
+    
+    # The function for creating transcripts 
     @action(detail=True, methods=['post'])
     def create_transcripts(self, request, video_id):
         try:
@@ -193,7 +200,7 @@ class TranscriptViewSet(viewsets.ModelViewSet):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-    #this is a function to retrieve transcripts of a specific video
+    # Function to retrieve transcripts of a specific video
     @action(detail=True, methods=['get'])
     def get_transcripts(self, request, video_id):
         try:
@@ -204,4 +211,76 @@ class TranscriptViewSet(viewsets.ModelViewSet):
         transcripts = Transcript.objects.filter(videoID=video)
         serializer = TranscriptSerializer(transcripts, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+
+# This is the added segment viewset 
+class complexSegementViewSet(viewsets.ModelViewSet):
+    queryset = Video.objects.all()
+    serializer_class = VideoSerializer
+    # Permission classes can be adjusted as needed
+    # permission_classes = [AllowAny]   
+
+    @action(detail=True, methods=['post'], url_path='create-segments-and-transcripts')
+    def create_segments_and_transcripts(self, request, video_id):
+        try:
+            video = Video.objects.get(pk=video_id)
+        except Video.DoesNotExist:
+            return Response({"error": "Video not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        segments_data = request.data.get('segments', [])
+        transcripts_data = request.data.get('transcripts', [])
+
+        with transaction.atomic():  # Start of transaction block
+            # Create video segments
+            created_segments = []
+            existing_segment_numbers = set(VideoSegment.objects.filter(VideoID=video_id).values_list('segmentNumber', flat=True))
+            seen_segment_numbers = set()
+
+            for segment_data in segments_data:
+                segment_number = segment_data.get('segmentNumber')
+
+                if VideoSegment.objects.filter(VideoID=video.id, segmentNumber=segment_number).exists():
+                    return Response({"error": f"A segment with segmentNumber {segment_number} already exists for this video."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                elif segment_number in seen_segment_numbers:
+                    return Response({"error": f"Duplicate segmentNumber '{segment_number}' found in the request."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    segment_data['VideoID'] = video.id
+                    created_segments.append(segment_data)
+                    seen_segment_numbers.add(segment_number)
+
+            serializer_segment = VideoSegmentSerializer(data=created_segments, many=True)
+            if serializer_segment.is_valid():
+                serializer_segment.save()
+            else:
+                return Response(serializer_segment.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create transcripts for segments
+            created_transcripts = []
+            for transcript_data in transcripts_data:
+                segment_number = transcript_data.get('segmentNumber')
+
+                try:
+                    video_segment = VideoSegment.objects.get(VideoID=video.id, segmentNumber=segment_number)
+                except VideoSegment.DoesNotExist:
+                    return Response({"error": f"Segment number '{segment_number}' does not exist for this video."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+                prepared_transcript = {
+                    'videoID': video.id,
+                    'videoSegmentID': video_segment.id,
+                    'title': transcript_data.get('title'),
+                    'content': transcript_data.get('content'),
+                    'transcriberID': request.user.id,  # Assuming user is authenticated
+                    'transcriptDate': datetime.now(),  # Set the current date and time
+                    'transcription': transcript_data.get('transcription'),
+                    'transcriptionLanguage': transcript_data.get('transcriptionLanguage'),
+                }
+                created_transcripts.append(prepared_transcript)
+
+            serializer_transcript = TranscriptSerializer(data=created_transcripts, many=True)
+            if serializer_transcript.is_valid():
+                serializer_transcript.save()
+                return Response({"message": "Segments and transcripts added successfully"}, status=status.HTTP_201_CREATED)
+            else:
+                return Response(serializer_transcript.errors, status=status.HTTP_400_BAD_REQUEST)
