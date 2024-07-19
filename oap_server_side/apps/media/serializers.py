@@ -6,15 +6,18 @@ class LikeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Like
         fields = '__all__'
+        read_only_fields = ['userID']
+
 
 class MediaSerializer(serializers.ModelSerializer):
     likes = serializers.SerializerMethodField()#add a new field to the serializer read-only ,calls a method on the serializer class it is attached to.
     views = serializers.SerializerMethodField()
 
-
     class Meta:
         model = Media
         fields = '__all__'
+        read_only_fields = ['uploadDate']
+
 
     def get_likes(self, obj):
         return Like.objects.filter(mediaID=obj).count()
@@ -39,6 +42,8 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = '__all__'
+        read_only_fields = ['userID']
+
 
     def validate(self, data):
         if 'parent' in data and data['parent'] is not None:
@@ -55,3 +60,4 @@ class ViewSerializer(serializers.ModelSerializer):
     class Meta:
         model = View
         fields = '__all__'
+        read_only_fields = ['userID']
