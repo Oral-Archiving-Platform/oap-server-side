@@ -105,8 +105,8 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         serializer = PlaylistMediaSerializer(media, many=True)
         return Response(serializer.data)
     #get by role this is a function that gets a user either : all collections or all playlists and returns them :
-    @action(detail=False, methods=['get'])
-    def get_by_Role(self, request):
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def get_playlist_by_Role(self, request):
         # Get the user ID from the request data
         user_id = request.data.get('user_id')
         type = request.data.get('type')
