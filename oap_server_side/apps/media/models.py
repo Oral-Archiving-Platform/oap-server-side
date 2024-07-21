@@ -20,7 +20,7 @@ class Media(models.Model):
     title = models.CharField(max_length=100)
     uploaderID = models.ForeignKey(User, on_delete=models.CASCADE)
     description = models.TextField()
-    uploadDate = models.DateTimeField()
+    uploadDate = models.DateTimeField(auto_now_add=True)
     categoryID = models.ForeignKey(Category, on_delete=models.CASCADE)
     type=models.CharField(
         max_length=50,
@@ -37,7 +37,7 @@ class Media(models.Model):
 class View(models.Model):
     mediaID = models.ForeignKey(Media, on_delete=models.CASCADE)
     userID = models.ForeignKey(User, on_delete=models.CASCADE)
-    viewDate = models.DateTimeField()
+    viewDate = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return "View"
@@ -45,7 +45,7 @@ class View(models.Model):
 class Like(models.Model):
     mediaID = models.ForeignKey(Media, on_delete=models.CASCADE)
     userID = models.ForeignKey(User, on_delete=models.CASCADE)
-    likeDate = models.DateTimeField()
+    likeDate = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return "Like"

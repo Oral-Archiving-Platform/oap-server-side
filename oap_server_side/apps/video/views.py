@@ -15,8 +15,6 @@ class VideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
     permission_classes = [IsVideoOwnerOrReadOnly]
-    # Uncomment if needed for testing
-    # permission_classes = [AllowAny]
     
     @action(detail=False, methods=['post'], url_path='create-complex-video')
     def create_complex_video(self, request, *args, **kwargs):
@@ -26,6 +24,8 @@ class VideoViewSet(viewsets.ModelViewSet):
                 video_data = request.data.get('video')
                 participants = request.data.get('participants')
                 media_data = video_data.get('mediaID')
+
+                media_data['uploaderID'] = request.user.id
 
                 media, media_errors = create_media_with_category(media_data, media_data.get('categoryID'))
                 if media_errors:  
