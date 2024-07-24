@@ -124,3 +124,6 @@ webencodings
 websocket-client
 widgetsnbextension
 django-cors-headers==4.4.0
+phonenumbers
+pyotp
+
