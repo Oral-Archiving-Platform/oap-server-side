@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate QR Code</title>
+</head>
+<body>
+    <h1>Scan this QR code with your authenticator app</h1>
+    <img src="{{ qr_url }}" alt="QR Code">
+    <a href="{% url 'verify_2fa' %}">Verify 2FA</a>
+</body>
+</html>
