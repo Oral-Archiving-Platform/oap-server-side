@@ -1,3 +1,4 @@
+# views.py
 from rest_framework.views import APIView
 from rest_framework import permissions, status
 from rest_framework.response import Response
@@ -5,7 +6,7 @@ from .serializers import UserSerializer, UserInfoSerializer
 from .models import User
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenVerifySerializer
-from rest_framework_simplejwt.tokens import AccessToken, TokenError
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken, TokenError
 from rest_framework.generics import ListAPIView
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -80,6 +81,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['email'] = user.email
         token['id'] = user.id
         token['role'] = user.role
+        token['is_2fa_completed'] = user.is_2fa_completed  # Add is_2fa_completed to token
 
         totp_device, created = TOTPDevice.objects.get_or_create(user=user, name='default')
         if created:
@@ -94,7 +96,7 @@ class MyTokenObtainPairView(TokenObtainPairView):
         from django.contrib.auth import authenticate, login  # Import here to avoid circular import
         username = request.data.get('username')
         password = request.data.get('password')
-        logger.info(f"Attempting login for user: {username} with password: {password}")
+        logger.info(f"Attempting login for user: {username}")
 
         response = super().post(request, *args, **kwargs)
         
@@ -102,8 +104,7 @@ class MyTokenObtainPairView(TokenObtainPairView):
         if user:
             auth_login(request, user)
             if not user.is_2fa_completed:
-                # Force 2FA if not completed
-                request.session['2fa_user_id'] = user.id  # Store user ID in session for 2FA
+                request.session['2fa_user_id'] = user.id
                 logger.info(f"User {username} requires 2FA verification.")
                 return JsonResponse({'message': '2FA required'}, status=status.HTTP_401_UNAUTHORIZED)
             else:
@@ -112,23 +113,6 @@ class MyTokenObtainPairView(TokenObtainPairView):
             logger.error(f"Failed to authenticate user: {username}")
 
         return response
-
-class UserRegister(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            return Response({"message": "User Created"}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class TestView(APIView):
-    queryset = User.objects.all()
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        return Response({"message": "You are authenticated"}, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -157,7 +141,7 @@ def generate_qr_code(request):
     else:
         logger.info("Static directory exists.")
 
-    qr_code_path = os.path.join(static_dir, 'qr_code.png')
+    qr_code_path = os.path.join(static_dir, f'qr_code_{user.username}.png')
     logger.debug(f"QR code path: {qr_code_path}")
 
     try:
@@ -167,7 +151,7 @@ def generate_qr_code(request):
         logger.error(f"Error saving QR code: {e}")
         return JsonResponse({'error': 'Could not save QR code'}, status=500)
 
-    return JsonResponse({'qr_url': 'static/qr_code.png'})
+    return JsonResponse({'qr_url': f'static/qr_code_{user.username}.png'})
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -181,7 +165,6 @@ def verify_2fa(request):
         secret = base64.b32encode(totp_device.bin_key).decode('utf-8')
         logger.debug(f"Token received: {token}")
         logger.debug(f"Shared Secret: {secret}")
-        logger.debug(f"Config URL: {totp_device.config_url}")
         logger.debug(f"Current server time: {datetime.now()}")
 
         totp = pyotp.TOTP(secret)
@@ -189,11 +172,20 @@ def verify_2fa(request):
         logger.debug(f"pyotp verification result: {pyotp_verified}")
 
         if pyotp_verified:
-            request.session['otp_verified'] = True
             user.is_2fa_completed = True  # Mark 2FA as completed
             user.save()
+
+            # Generate new JWT tokens with is_2fa_completed attribute
+            refresh = RefreshToken.for_user(user)
+            access = refresh.access_token
+            access['is_2fa_completed'] = True  # Add is_2fa_completed to access token
+
             logger.info(f"User {user.username} 2FA verified successfully.")
-            return Response({'message': '2FA verified successfully'})
+            return Response({
+                'message': '2FA verified successfully',
+                'refresh': str(refresh),
+                'access': str(access)
+            })
         else:
             logger.warning(f"Invalid token for user {user.username}.")
             return Response({'error': 'Invalid token'}, status=400)
@@ -203,3 +195,19 @@ def verify_2fa(request):
     except Exception as e:
         logger.error(f"Exception: {str(e)}")
         return Response({'error': str(e)}, status=500)
+
+class UserRegister(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({"message": "User Created"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class TestView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({"message": "You are authenticated"}, status=status.HTTP_200_OK)
