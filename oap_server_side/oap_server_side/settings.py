@@ -54,7 +54,9 @@ INSTALLED_APPS = [
     'phonenumber_field',  # This line is important to add
    
 ]
-
+import os
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 SITE_ID = 1
 

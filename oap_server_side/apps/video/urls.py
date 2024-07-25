@@ -7,6 +7,7 @@ router.register(r'video', VideoViewSet, basename='video')
 router.register(r'segment', VideoSegmentViewSet, basename='segment')
 router.register(r'transcript', TranscriptViewSet, basename='transcript')
 router.register(r'participant', ParticipantViewSet, basename='participant')
+router.register(r'combined', complexSegementViewSet,basename='combined')
 
 urlpatterns = [
     path('', include(router.urls)),
