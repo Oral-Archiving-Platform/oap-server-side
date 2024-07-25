@@ -18,8 +18,11 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['username', 'email','password','first_name','last_name','role']
-        extra_kwargs = {'password': {'write_only': True}}
+        fields = ['username', 'email','password', 'picture','first_name','last_name']
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'is_2fa_completed': {'read_only': True},  # Make read-only
+        }
 
     def create(self, validated_data):
         user = User(
@@ -38,3 +41,6 @@ class UserInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['email', 'first_name', 'last_name', 'role','picture']
+        extra_kwargs = {
+            'is_2fa_completed': {'read_only': True},  # Make read-only
+        }
