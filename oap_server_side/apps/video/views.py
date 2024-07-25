@@ -11,6 +11,7 @@ from ..media.services import create_media_with_category
 from django.db import transaction
 
 
+
 class VideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
