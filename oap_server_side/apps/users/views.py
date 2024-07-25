@@ -102,7 +102,7 @@ class MyTokenObtainPairView(TokenObtainPairView):
                 return JsonResponse({
                     'message': '2FA required',
                     'qr_code_url': qr_code_url,
-                    'token': access
+                    'access': access
                 }, status=status.HTTP_200_OK)
 
             else:
