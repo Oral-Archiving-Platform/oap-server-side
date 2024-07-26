@@ -86,7 +86,7 @@ class UserActivityViewSet(viewsets.ViewSet):
         
         # Use the user ID from URL
         userID = pk
-        
+        #views
         # Validate and process request data
         serializer = ViewSerializer(data=request.data)
         if serializer.is_valid():
