@@ -1,13 +1,17 @@
 from rest_framework import viewsets, status
 from .permissions import IsVideoOwnerOrReadOnly
 from .models import Video, Transcript, VideoSegment, Participant
-from .serializers import VideoSerializer, TranscriptSerializer, VideoSegmentSerializer, ParticipantSerializer
+from .serializers import VideoSerializer, TranscriptSerializer, VideoSegmentSerializer, ParticipantSerializer, VideoPageSerializer
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from datetime import datetime
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from ..media.services import create_media_with_category
 from django.db import transaction
+class VideoPageViewSet(viewsets.ModelViewSet):
+    serializer_class = VideoPageSerializer
+    queryset = Video.objects.all()
+    permission_classes = [AllowAny]
 
 class VideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all()
