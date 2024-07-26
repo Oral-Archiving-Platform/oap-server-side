@@ -1,5 +1,5 @@
 from ..users.permissions import IsAdmin
-from .permissions import IsOwnerOrReadOnly
+from .permissions import IsOwnerOrReadOnly,IsChannelMemberOrReadOnly
 from rest_framework import viewsets,status
 from rest_framework.response import Response
 from .models import Category, Media, Comment, View, Like
@@ -17,7 +17,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 
 class MediaViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAdmin,IsOwnerOrReadOnly]
+    permission_classes = [IsAdmin,IsOwnerOrReadOnly,IsChannelMemberOrReadOnly]
     queryset = Media.objects.all()
     serializer_class = MediaSerializer
 

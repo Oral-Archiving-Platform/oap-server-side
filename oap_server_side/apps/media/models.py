@@ -1,6 +1,6 @@
 from django.db import models
-from apps.users.models import User
-from django.utils import timezone
+from ..users.models import User
+from ..channel.models import Channel
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -19,6 +19,7 @@ class Media(models.Model):
 
     title = models.CharField(max_length=100)
     uploaderID = models.ForeignKey(User, on_delete=models.CASCADE)
+    channelID = models.ForeignKey(Channel, on_delete=models.CASCADE)
     description = models.TextField()
     uploadDate = models.DateTimeField(auto_now_add=True)
     categoryID = models.ForeignKey(Category, on_delete=models.CASCADE)
