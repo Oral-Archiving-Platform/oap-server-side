@@ -280,3 +280,78 @@ class ComplexSegmentViewSet(viewsets.ViewSet):
             return Response(transcript_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"message": "Segments and transcripts added successfully"}, status=status.HTTP_201_CREATED)
+
+class complexSegementViewSet(viewsets.ModelViewSet):
+    queryset = VideoSegment.objects.all()
+    serializer_class = VideoSegmentSerializer
+
+    @action(detail=False, methods=['post'], url_path='create-segments-and-transcripts')
+    def create_segments_and_transcripts(self, request):
+        # Extract video_id from request body
+        video_id = request.data.get('video_id')
+        if not video_id:
+            return Response({"error": "video_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            video = Video.objects.get(pk=video_id)
+        except Video.DoesNotExist:
+            return Response({"error": "Video not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        segments_data = request.data.get('segments', [])
+        transcripts_data = request.data.get('transcripts', [])
+
+        with transaction.atomic():  # Start of transaction block
+            # Create video segments
+            created_segments = []
+            existing_segment_numbers = set(VideoSegment.objects.filter(VideoID=video_id).values_list('segmentNumber', flat=True))
+            seen_segment_numbers = set()
+
+            for segment_data in segments_data:
+                segment_number = segment_data.get('segmentNumber')
+
+                if VideoSegment.objects.filter(VideoID=video_id, segmentNumber=segment_number).exists():
+                    return Response({"error": f"A segment with segmentNumber {segment_number} already exists for this video."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                elif segment_number in seen_segment_numbers:
+                    return Response({"error": f"Duplicate segmentNumber '{segment_number}' found in the request."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    segment_data['VideoID'] = video_id
+                    created_segments.append(segment_data)
+                    seen_segment_numbers.add(segment_number)
+
+            serializer_segment = VideoSegmentSerializer(data=created_segments, many=True)
+            if serializer_segment.is_valid():
+                serializer_segment.save()
+            else:
+                return Response(serializer_segment.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create transcripts for segments
+            created_transcripts = []
+            for transcript_data in transcripts_data:
+                segment_number = transcript_data.get('segmentNumber')
+
+                try:
+                    video_segment = VideoSegment.objects.get(VideoID=video_id, segmentNumber=segment_number)
+                except VideoSegment.DoesNotExist:
+                    return Response({"error": f"Segment number '{segment_number}' does not exist for this video."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+                prepared_transcript = {
+                    'videoID': video_id,
+                    'videoSegmentID': video_segment.id,
+                    'title': transcript_data.get('title'),
+                    'content': transcript_data.get('content'),
+                    'transcriberID': request.user.id,  # Assuming user is authenticated
+                    'transcriptDate': datetime.now(),  # Set the current date and time
+                    'transcription': transcript_data.get('transcription'),
+                    'transcriptionLanguage': transcript_data.get('transcriptionLanguage'),
+                }
+                created_transcripts.append(prepared_transcript)
+
+            serializer_transcript = TranscriptSerializer(data=created_transcripts, many=True)
+            if serializer_transcript.is_valid():
+                serializer_transcript.save()
+                return Response({"message": "Segments and transcripts added successfully"}, status=status.HTTP_201_CREATED)
+            else:
+                return Response(serializer_transcript.errors, status=status.HTTP_400_BAD_REQUEST)
