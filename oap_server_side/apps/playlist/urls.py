@@ -1,4 +1,4 @@
-from .views import PlaylistViewSet, PlaylistMediaViewSet
+from .views import PlaylistViewSet, PlaylistMediaViewSet, WatchLaterViewSet
 from rest_framework.routers import DefaultRouter
 from django.urls import path, include
 router = DefaultRouter()
@@ -7,6 +7,7 @@ router = DefaultRouter()
 router = DefaultRouter()
 router.register(r'playlist', PlaylistViewSet, basename='playlist')
 router.register(r'playlist_media', PlaylistMediaViewSet,basename='playlist_media')
+router.register(r'watchlater', WatchLaterViewSet, basename='watchlater')
 
 
 urlpatterns = [
