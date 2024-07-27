@@ -1,6 +1,6 @@
-from rest_framework import viewsets
+from rest_framework import viewsets,status
 from .models import PlaylistMedia, Playlist
-from .serializers import PlaylistMediaSerializer,PlaylistSerializer,PlaylistDetailSerializer
+from .serializers import PlaylistMediaSerializer,PlaylistSerializer,PlaylistDetailSerializer,AddToWatchLaterSerializer
 from apps.media.models import Media,User
 from apps.media.serializers import MediaSerializer
 from rest_framework.exceptions import PermissionDenied
@@ -115,12 +115,10 @@ class PlaylistViewSet(viewsets.ModelViewSet):
 
         if not user_id:
             return Response({"error": "User ID is required."}, status=400)
-
         try:
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return Response({"error": "User not found."}, status=404)
-
         if not type:
             return Response({"error": "Playlist type is required."}, status=400)
 
@@ -150,15 +148,7 @@ class PlaylistMediaViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("You are not the owner of this playlist.")
         #if watch later exists add the media to it, otherwise create it 
         if playlist.type == Playlist.WATCHLATER:
-            watch_later_playlist = Playlist.objects.filter(created_by=user, type=Playlist.WATCHLATER).first()
-            if not watch_later_playlist:
-                watch_later_playlist = Playlist.objects.create(
-                    name="Watch Later",
-                    description="Automatically created Watch Later playlist",
-                    type=Playlist.WATCHLATER,
-                    privacy_status=Playlist.PRIVATE,  # Example privacy status, adjust as needed
-                    created_by=user
-                )
+            raise PermissionDenied("Creation of 'Watch Later' playlist is not allowed.")
         if playlist.type == Playlist.COLLECTION:
             media = Media.objects.filter(uploaderID=user)
             if serializer.validated_data['media'] not in media:
@@ -180,3 +170,50 @@ class PlaylistMediaViewSet(viewsets.ModelViewSet):
         media_items = Media.objects.filter(uploaderID=user)
         serializer = MediaSerializer(media_items, many=True)
         return Response(serializer.data)
+    
+
+
+#WATCH LATER VIEW SET: 
+class WatchLaterViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+    @action(detail=False, methods=['post'], url_path='add')
+    def add_to_watch_later(self, request):
+            serializer = AddToWatchLaterSerializer(data=request.data)
+            if serializer.is_valid():
+                user = request.user
+                media_id = serializer.validated_data['media_id']
+                # Retrieve or create the "Watch Later" playlist
+                playlist, created = Playlist.objects.get_or_create(
+                    name='Watch Later',
+                    created_by=user,
+                    defaults={
+                        'description': 'Videos to watch later',
+                        'privacy_status': Playlist.PRIVATE,
+                        'type': Playlist.WATCHLATER
+                    }
+                )
+
+                try:
+                    media = Media.objects.get(id=media_id)
+                    
+                    # Check if the media is already in the playlist
+                    if PlaylistMedia.objects.filter(playlist=playlist, media=media).exists():
+                        return Response({"message": "Video already added to Watch Later playlist"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    # Add media to the playlist
+                    PlaylistMedia.objects.create(playlist=playlist, media=media, added_by=user)
+                    
+                    return Response({"message": "Video added to Watch Later playlist"}, status=status.HTTP_200_OK)
+                except Media.DoesNotExist:
+                    return Response({'message': 'Media not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    @action(detail=False, methods=['get'], url_path='get')
+    def list_watch_later(self, request):
+        user = request.user
+        try:
+            playlist = Playlist.objects.get(name='Watch Later', created_by=user)
+            playlist_media = PlaylistMedia.objects.filter(playlist=playlist)
+            serializer = PlaylistMediaSerializer(playlist_media, many=True)
+            return Response({"user_id": user.id, "watch_later": serializer.data}, status=status.HTTP_200_OK)
+        except Playlist.DoesNotExist:
+            return Response({'message': 'Watch Later playlist not found.'}, status=status.HTTP_404_NOT_FOUND)
