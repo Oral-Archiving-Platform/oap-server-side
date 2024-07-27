@@ -179,9 +179,12 @@ class WatchLaterViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], url_path='add')
     def add_to_watch_later(self, request):
             serializer = AddToWatchLaterSerializer(data=request.data)
+
             if serializer.is_valid():
                 user = request.user
+                
                 media_id = serializer.validated_data['media_id']
+                print(media_id)
                 # Retrieve or create the "Watch Later" playlist
                 playlist, created = Playlist.objects.get_or_create(
                     name='Watch Later',
