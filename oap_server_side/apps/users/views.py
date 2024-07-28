@@ -60,58 +60,65 @@ class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
     def post(self, request, *args, **kwargs):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        logger.info(f"Attempting login for user: {username}")
-
+        # First, use the standard TokenObtainPairView to validate credentials
         response = super().post(request, *args, **kwargs)
 
-        user = authenticate(username=username, password=password)
-        if user:
-            auth_login(request, user)
-            access = response.data.get('access')
+        # If the response is successful, continue processing
+        if response.status_code == status.HTTP_200_OK:
+            username = request.data.get('username')
+            password = request.data.get('password')
+            logger.info(f"Attempting login for user: {username}")
 
-            if not user.is_2fa_completed:
-                request.session['2fa_user_id'] = user.id
-                logger.info(f"User {username} requires 2FA verification.")
+            # Use the authenticate function to get the user object
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                auth_login(request, user)
+                access = response.data.get('access')
 
-                # Automatically generate QR code for 2FA
-                totp_device, created = TOTPDevice.objects.get_or_create(user=user, name='default')
-                if created:
-                    totp_device.save()
-                    logger.info(f"TOTP device created for user: {user.username}")
+                if not user.is_2fa_completed:
+                    request.session['2fa_user_id'] = user.id
+                    logger.info(f"User {username} requires 2FA verification.")
 
-                secret = base64.b32encode(totp_device.bin_key).decode('utf-8')
-                totp_url = pyotp.totp.TOTP(secret).provisioning_uri(name=user.username, issuer_name="YourApp")
-                qr = qrcode.make(totp_url)
-                qr_code_buffer = io.BytesIO()
-                qr.save(qr_code_buffer, format='PNG')
-                qr_code_buffer.seek(0)
+                    # Automatically generate QR code for 2FA
+                    totp_device, created = TOTPDevice.objects.get_or_create(user=user, name='default')
+                    if created:
+                        totp_device.save()
+                        logger.info(f"TOTP device created for user: {user.username}")
 
-                qr_code_filename = f'qr_code_{user.username}.png'
-                qr_code_path = os.path.join(settings.MEDIA_ROOT, 'qr_codes', qr_code_filename)
-                qr_code_url = os.path.join(settings.MEDIA_URL, 'qr_codes', qr_code_filename)
+                    secret = base64.b32encode(totp_device.bin_key).decode('utf-8')
+                    totp_url = pyotp.totp.TOTP(secret).provisioning_uri(name=user.username, issuer_name="YourApp")
+                    qr = qrcode.make(totp_url)
+                    qr_code_buffer = io.BytesIO()
+                    qr.save(qr_code_buffer, 'PNG')
+                    qr_code_buffer.seek(0)
 
-                os.makedirs(os.path.dirname(qr_code_path), exist_ok=True)
-                with open(qr_code_path, 'wb') as f:
-                    f.write(qr_code_buffer.read())
+                    qr_code_filename = f'qr_code_{user.username}.png'
+                    qr_code_path = os.path.join(settings.MEDIA_ROOT, 'qr_codes', qr_code_filename)
+                    qr_code_url = os.path.join(settings.MEDIA_URL, 'qr_codes', qr_code_filename)
 
-                logger.info(f"QR code saved at: {qr_code_path}")
+                    os.makedirs(os.path.dirname(qr_code_path), exist_ok=True)
+                    with open(qr_code_path, 'wb') as f:
+                        f.write(qr_code_buffer.read())
 
-                # Return the URL of the QR code image along with 2FA required message
-                return JsonResponse({
-                    'message': '2FA required',
-                    'qr_code_url': qr_code_url,
-                    'access': access
-                }, status=status.HTTP_200_OK)
+                    logger.info(f"QR code saved at: {qr_code_path}")
 
+                    # Return the URL of the QR code image along with 2FA required message
+                    return Response({
+                        'message': '2FA required',
+                        'qr_code_url': qr_code_url,
+                        'access': access
+                    }, status=status.HTTP_200_OK)
+
+                else:
+                    logger.info(f"User {username} logged in successfully.")
+                    return response
             else:
-                logger.info(f"User {username} logged in successfully.")
-                return response
+                logger.error(f"Failed to authenticate user: {username}")
+                return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
         else:
-            logger.error(f"Failed to authenticate user: {username}")
-            return JsonResponse({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-
+            logger.error(f"Failed to obtain token for user: {username}")
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+        
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
@@ -134,11 +141,9 @@ from rest_framework.permissions import IsAuthenticated
 
 class VerifyTokenView(APIView):
     permission_classes = [IsAuthenticated]
-    def post(self, request):
-        
-        user = request.user
-        return Response({'message': 'Token is valid'}, status=status.HTTP_200_OK)
 
+    def post(self, request, *args, **kwargs):
+        return JsonResponse({'message': 'Token is valid'}, status=status.HTTP_200_OK)
     
 
 class VerifyTokenView2FA(APIView):
@@ -148,7 +153,6 @@ class VerifyTokenView2FA(APIView):
         username = request.data.get('username')
         password = request.data.get('password')
         logger.info(f"Attempting login for user: {username}")
-
         # Authenticate the user with username and password
         user = authenticate(username=username, password=password)
         if user:
@@ -197,7 +201,7 @@ def generate_qr_code(request):
     # Generate QR code image
     qr = qrcode.make(totp_url)
     qr_code_buffer = io.BytesIO()
-    qr.save(qr_code_buffer, format='PNG')
+    qr.save(qr_code_buffer,'PNG')
     qr_code_buffer.seek(0)
 
     # Define the path to save the QR code image

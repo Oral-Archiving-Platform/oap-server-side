@@ -165,7 +165,7 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',  # default
-    'django_otp.plugins.otp_totp.models.TOTPDevice',
+    # 'django_otp.plugins.otp_totp.models.TOTPDevice',
 )
 AUTH_USER_MODEL = 'users.User'  
 
