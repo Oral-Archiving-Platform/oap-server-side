@@ -11,9 +11,11 @@ class Media(models.Model):
     VIDEO='1'
     OTHER='2'
     AUDIO='3'
+    EBOOK='4'
     TYPE_CHOICES = [
         (VIDEO, 'Video'),
         (AUDIO, 'Audio'),
+        (EBOOK, 'Ebook'),
         (OTHER, 'Other'),
     ]
 
