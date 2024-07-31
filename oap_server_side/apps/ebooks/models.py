@@ -15,14 +15,24 @@ class Quiz(models.Model):
 
     def __str__(self):
         return self.title
-
 class Question(models.Model):
     quiz = models.ForeignKey(Quiz, related_name='questions', on_delete=models.CASCADE)
     question_text = models.TextField()
-    type = models.CharField(max_length=20, choices=[('true_false', 'True/False'), ('multiple_choice', 'Multiple Choice')])
+    QUESTION_TYPES = [
+        ('true_false', 'True/False'),
+        ('multiple_choice', 'Multiple Choice'),
+    ]
+    type = models.CharField(max_length=20, choices=QUESTION_TYPES)
+    correct_answer = models.CharField(max_length=20, choices=[('True', 'True'), ('False', 'False')], null=True, blank=True)
 
     def __str__(self):
         return self.question_text
+
+    def save(self, *args, **kwargs):
+        if self.type != 'true_false':
+            self.correct_answer = None
+        super().save(*args, **kwargs)
+
 
 class Option(models.Model):
     question = models.ForeignKey(Question, related_name='options', on_delete=models.CASCADE)
