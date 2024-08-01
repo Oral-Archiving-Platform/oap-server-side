@@ -1,7 +1,7 @@
 from ..users.permissions import IsAdmin
 from rest_framework import viewsets,status
 from .permissions import IsVideoOwnerOrReadOnly
-from .models import Video, Transcript, VideoSegment, Participant
+from .models import Video, Transcript, VideoSegment, Participant, Media
 from .serializers import VideoSerializer, TranscriptSerializer, VideoSegmentSerializer,ParticipantSerializer
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -177,6 +177,7 @@ class TranscriptViewSet(viewsets.ModelViewSet):
 class complexSegementViewSet(viewsets.ModelViewSet):
     queryset = VideoSegment.objects.all()
     serializer_class = VideoSegmentSerializer
+    permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=['post'], url_path='create-segments-and-transcripts')
     def create_segments_and_transcripts(self, request):
@@ -248,3 +249,39 @@ class complexSegementViewSet(viewsets.ModelViewSet):
                 return Response({"message": "Segments and transcripts added successfully"}, status=status.HTTP_201_CREATED)
             else:
                 return Response(serializer_transcript.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+ 
+    
+    @action(detail=False, methods=['get'], url_path='get_segment_transcript/(?P<video_id>\d+)')
+    def get_segments_and_transcripts(self, request, video_id=None):
+        # Ensure the user is authenticated
+        if not request.user.is_authenticated:
+            return Response({"error": "User not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Get media_id from the URL
+        if not video_id:
+            return Response({"error": "Video ID not provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            video = Video.objects.get(pk=video_id)
+        except Video.DoesNotExist:
+            return Response({"error": "Video not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Retrieve video segments
+        video_segments = VideoSegment.objects.filter(VideoID=video_id)
+
+        if not video_segments.exists():
+            return Response({"error": "No video segments found"}, status=status.HTTP_404_NOT_FOUND)
+
+        segments_data = []
+        for segment in video_segments:
+            # Retrieve transcripts for each segment
+            transcripts = Transcript.objects.filter(videoID=video_id, videoSegmentID=segment.id)
+            transcript_serializer = TranscriptSerializer(transcripts, many=True)
+            segment_data = {
+                'segment': VideoSegmentSerializer(segment).data,
+                'transcripts': transcript_serializer.data
+            }
+            segments_data.append(segment_data)
+
+        return Response(segments_data, status=status.HTTP_200_OK)
