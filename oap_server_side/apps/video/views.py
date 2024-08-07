@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status
 from .permissions import IsVideoOwnerOrReadOnly
 from .models import Video, Transcript, VideoSegment, Participant, Media
-from .serializers import VideoSerializer, TranscriptSerializer, VideoSegmentSerializer,ParticipantSerializer
+from .serializers import VideoSerializer, TranscriptSerializer, VideoSegmentSerializer,ParticipantSerializer,VideoPageSerializer
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from datetime import datetime
