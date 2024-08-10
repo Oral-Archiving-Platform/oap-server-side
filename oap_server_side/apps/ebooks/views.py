@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
-from .models import Ebook, Quiz, Question, Option, QuizSubmission
-from .serializers import EbookSerializer, QuizSerializer, QuestionSerializer, OptionSerializer, QuizSubmissionSerializer
+from .models import Ebook, Quiz, Question, QuizSubmission
+from .serializers import EbookSerializer, QuizSerializer, QuestionSerializer, QuizSubmissionSerializer
 
 class EbookViewSet(viewsets.ModelViewSet):
     queryset = Ebook.objects.all()
@@ -38,7 +38,6 @@ class QuizViewSet(viewsets.ModelViewSet):
 
             correct = False
             correct_answer = None
-            explanation = None  # If you have an explanation field in your model
 
             if question.type == 'true_false':
                 correct_answer = question.correct_answer
@@ -46,20 +45,17 @@ class QuizViewSet(viewsets.ModelViewSet):
                 if correct:
                     total_score += 1
             elif question.type == 'multiple_choice':
-                correct_option = question.options.filter(is_correct=True).first()
-                if correct_option:
-                    correct_answer = correct_option.text
-                    correct = correct_answer == selected_option
-                    if correct:
-                        total_score += 1
+                correct_option = question.correct_option
+                correct = correct_option == selected_option
+                if correct:
+                    total_score += 1
 
             feedback.append({
                 "question_id": question.id,
                 "question_text": question.question_text,
                 "selected_option": selected_option,
-                "correct_answer": correct_answer,
+                "correct_answer": correct_answer if question.type == 'true_false' else correct_option,
                 "correct": correct,
-               
             })
 
         QuizSubmission.objects.create(user=user, quiz=quiz, score=total_score)
@@ -75,35 +71,38 @@ class QuestionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def create(self, request, *args, **kwargs):
-        data = request.data.copy()  # Make a mutable copy of the request data
+        data = request.data
         question_type = data.get('type')
+        options = data.get('options', [])
+        correct_option = data.get('correct_option')
 
-        if question_type == 'true_false':
+        if question_type == 'multiple_choice':
+            if not options or correct_option not in options:
+                return Response({"error": "Options must include the correct option."}, status=status.HTTP_400_BAD_REQUEST)
+
+            question = Question.objects.create(
+                quiz_id=data.get('quiz'),
+                question_text=data.get('question_text'),
+                type=question_type,
+                options=options,
+                correct_option=correct_option,  # Save the correct option to the new field
+                correct_answer=None  # Correct answer is not used for multiple choice
+            )
+
+        elif question_type == 'true_false':
             correct_answer = data.get('correct_answer')
             if correct_answer not in ['True', 'False']:
                 return Response({"error": "Invalid or missing correct_answer for True/False question."}, status=status.HTTP_400_BAD_REQUEST)
+
             question = Question.objects.create(
                 quiz_id=data.get('quiz'),
                 question_text=data.get('question_text'),
                 type=question_type,
+                options=None,  # No options for true/false questions
                 correct_answer=correct_answer
             )
-        elif question_type == 'multiple_choice':
-            data.pop('correct_answer', None)  # Remove correct_answer if present
-            question = Question.objects.create(
-                quiz_id=data.get('quiz'),
-                question_text=data.get('question_text'),
-                type=question_type,
-                correct_answer=None  # Ensure correct_answer is set to None
-            )
-            # Additional logic for handling options would go here
 
         return Response(QuestionSerializer(question).data, status=status.HTTP_201_CREATED)
-
-class OptionViewSet(viewsets.ModelViewSet):
-    queryset = Option.objects.all()
-    serializer_class = OptionSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
 class QuizSubmissionViewSet(viewsets.ModelViewSet):
     queryset = QuizSubmission.objects.all()

@@ -15,6 +15,8 @@ class Quiz(models.Model):
 
     def __str__(self):
         return self.title
+
+
 class Question(models.Model):
     quiz = models.ForeignKey(Quiz, related_name='questions', on_delete=models.CASCADE)
     question_text = models.TextField()
@@ -24,23 +26,16 @@ class Question(models.Model):
     ]
     type = models.CharField(max_length=20, choices=QUESTION_TYPES)
     correct_answer = models.CharField(max_length=20, choices=[('True', 'True'), ('False', 'False')], null=True, blank=True)
+    options = models.JSONField(null=True, blank=True)  # JSON field to store options
+    correct_option = models.CharField(max_length=255, null=True, blank=True)  # New field to store the correct option
 
     def __str__(self):
         return self.question_text
 
     def save(self, *args, **kwargs):
-        if self.type != 'true_false':
-            self.correct_answer = None
+        if self.type == 'multiple_choice':
+            self.correct_answer = None  # Correct answer is not needed for multiple choice
         super().save(*args, **kwargs)
-
-
-class Option(models.Model):
-    question = models.ForeignKey(Question, related_name='options', on_delete=models.CASCADE)
-    text = models.CharField(max_length=255)
-    is_correct = models.BooleanField(default=False)
-
-    def __str__(self):
-        return self.text
 
 class QuizSubmission(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

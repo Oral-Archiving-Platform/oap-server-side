@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Ebook, Quiz, Question, Option, QuizSubmission
+from .models import Ebook, Quiz, Question, QuizSubmission
 from apps.media.models import Category, Media
 
 class EbookSerializer(serializers.ModelSerializer):
@@ -10,24 +10,17 @@ class EbookSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class OptionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Option
-        fields = '__all__'
 class QuestionSerializer(serializers.ModelSerializer):
-    options = OptionSerializer(many=True, read_only=True)
+   
     class Meta:
         model = Question
-        fields = ['id', 'quiz', 'question_text', 'type', 'correct_answer','options']
+        fields = ['id', 'quiz', 'question_text', 'type', 'correct_answer', 'options', 'correct_option']
+
+    
 
     def validate(self, data):
-        if data['type'] == 'true_false':
-            if data.get('correct_answer') not in ['True', 'False']:
-                raise serializers.ValidationError("Invalid correct answer for True/False question.")
-        elif data['type'] == 'multiple_choice':
-            if 'correct_answer' in data:
-                data.pop('correct_answer')  # Ensure it's removed if somehow passed
-        return data
+        if data['type'] == 'multiple_choice' and data.get('correct_answer'):
+            raise serializers.ValidationError("Multiple choice questions should not have a correct_answer directly.")
 
 
 class QuizSubmissionSerializer(serializers.ModelSerializer):
