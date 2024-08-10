@@ -2,6 +2,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from .models import Ebook, Quiz, Question, QuizSubmission
 from .serializers import EbookSerializer, QuizSerializer, QuestionSerializer, QuizSubmissionSerializer
+from random import sample
 
 class EbookViewSet(viewsets.ModelViewSet):
     queryset = Ebook.objects.all()
@@ -27,6 +28,8 @@ class QuizViewSet(viewsets.ModelViewSet):
 
         total_score = 0
         feedback = []
+        total_questions_answered = len(user_answers)
+
         for answer in user_answers:
             question_id = answer.get('question_id')
             selected_option = answer.get('selected_option')
@@ -58,13 +61,68 @@ class QuizViewSet(viewsets.ModelViewSet):
                 "correct": correct,
             })
 
-        QuizSubmission.objects.create(user=user, quiz=quiz, score=total_score)
+        # Calculate the percentage score
+        if total_questions_answered > 0:
+            percentage_score = (total_score / total_questions_answered) * 100
+        else:
+            percentage_score = 0  # Handle edge case where no questions were answered
+
+        QuizSubmission.objects.create(user=user, quiz=quiz, score=percentage_score)
         return Response({
             "message": "Quiz submitted successfully.",
-            "score": total_score,
+            "score": percentage_score,
             "feedback": feedback
         }, status=status.HTTP_201_CREATED)
 
+   
+    @action(detail=False, methods=['post'], url_path='generate', url_name='generate_quiz')
+    def generate_quiz(self, request):
+        ebook_id = request.data.get('ebook_id')
+        
+        if not ebook_id:
+            return Response({"error": "Ebook ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            ebook = Ebook.objects.get(id=ebook_id)
+        except Ebook.DoesNotExist:
+            return Response({"error": "Ebook not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Fetch all related questions for the ebook
+        related_questions = Question.objects.filter(quiz__ebook=ebook)
+
+        if len(related_questions) < 10:
+            return Response({"error": "Not enough questions to generate a quiz."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Separate multiple choice and true/false questions
+        multiple_choice_questions = [q for q in related_questions if q.type == 'multiple_choice']
+        true_false_questions = [q for q in related_questions if q.type == 'true_false']
+
+        if len(multiple_choice_questions) < 4 or len(true_false_questions) < 6:
+            return Response({"error": "Not enough questions to meet the required ratio."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Randomly select questions based on the ratio
+        selected_mc_questions = sample(multiple_choice_questions, 4)  # 40% of 10 is 4
+        selected_tf_questions = sample(true_false_questions, 6)  # 60% of 10 is 6
+
+        # Combine the selected questions
+        selected_questions = selected_mc_questions + selected_tf_questions
+
+        # Create a new quiz
+        new_quiz = Quiz.objects.create(
+            ebook=ebook,
+            title=f"Generated Quiz for {ebook.title}"
+        )
+
+        # Add selected questions to the new quiz
+        for question in selected_questions:
+            question.quiz = new_quiz
+            question.save()
+
+        return Response({
+            "message": "Quiz generated successfully.",
+            "quiz_id": new_quiz.id,
+            "questions": QuestionSerializer(selected_questions, many=True).data
+        }, status=status.HTTP_201_CREATED)
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
