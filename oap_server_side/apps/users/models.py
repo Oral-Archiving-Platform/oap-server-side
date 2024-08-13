@@ -33,7 +33,7 @@ class User(AbstractUser):
         help_text='Specific permissions for this user.',
         related_query_name='userpermission',
     )
-    is_2fa_completed = models.BooleanField(default=False)
+    is_2fa_completed = models.BooleanField(default=False, editable=False)
     date_of_birth = models.DateField(default=timezone.now)
 
     def __str__(self):

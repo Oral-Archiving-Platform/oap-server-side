@@ -57,7 +57,9 @@ INSTALLED_APPS = [
     'phonenumber_field',  # This line is important to add
    
 ]
-
+import os
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 SITE_ID = 1
 
@@ -78,7 +80,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 20,
+    'PAGE_SIZE': 40,
 
 }
 LOGGING = {
@@ -169,7 +171,7 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',  # default
-    'django_otp.plugins.otp_totp.models.TOTPDevice',
+    # 'django_otp.plugins.otp_totp.models.TOTPDevice',
 )
 AUTH_USER_MODEL = 'users.User'  
 

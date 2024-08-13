@@ -3,7 +3,7 @@ from .models import Playlist, PlaylistMedia
 from apps.video.models import Video
 from apps.video.serializers import VideoSerializer
 import logging
-
+from apps.media.models import Media
 logger = logging.getLogger(__name__)
 
 class PlaylistSerializer(serializers.ModelSerializer):
@@ -34,3 +34,12 @@ class PlaylistDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Playlist
         fields = ( 'name','description','created_by','created_at', 'updated_at','created_by','type', 'privacy_status', 'playlist_media')
+
+
+class AddToWatchLaterSerializer(serializers.Serializer):
+    media_id = serializers.IntegerField()
+
+    def validate_media_id(self, value):
+        if not Media.objects.filter(id=value).exists():
+            raise serializers.ValidationError("Media with this ID does not exist.")
+        return value
