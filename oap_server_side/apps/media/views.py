@@ -62,5 +62,16 @@ class ViewViewSet(viewsets.ModelViewSet):
 class LikeViewSet(viewsets.ModelViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
+
     def perform_create(self, serializer):
-        serializer.save(userID=self.request.user)
+        user = self.request.user
+        media = serializer.validated_data['mediaID']
+        existing_like = Like.objects.filter(mediaID=media, userID=user).first()
+        
+        if existing_like:
+            existing_like.delete()
+            return Response({'message': 'Like removed'}, status=status.HTTP_204_NO_CONTENT)
+        else:
+            serializer.save(userID=user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+

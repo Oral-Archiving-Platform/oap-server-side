@@ -29,7 +29,7 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         return Playlist.objects.filter(privacy_status=Playlist.PUBLIC)
     def get_serializer_class(self):
         if self.action == 'retrieve':
-            return PlaylistDetailSerializer  # Use detailed serializer for retrieve action taht shows teh associate playlistmedia
+            return PlaylistDetailSerializer  # Use detailed serializer for retrieve action that shows the associate playlistmedia
         return PlaylistSerializer
     #users cannot see a playlist if it is private and they are not the owner
     #users can only delete a playlist if they are the owner same for update etc   

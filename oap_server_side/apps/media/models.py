@@ -55,7 +55,7 @@ class Comment(models.Model):
     mediaID = models.ForeignKey(Media, related_name='comments',on_delete=models.CASCADE)
     userID = models.ForeignKey(User, related_name='user_comments',on_delete=models.CASCADE)
     body = models.TextField()
-    created = models.DateTimeField(auto_now_add=True)#svaed just when object is created
+    created = models.DateTimeField(auto_now_add=True)#saved just when object is created
     updated = models.DateTimeField(auto_now=True) #changed whenever object saved
     parent = models.ForeignKey('self', null=True, blank=True, related_name='replies',on_delete=models.CASCADE)
 
