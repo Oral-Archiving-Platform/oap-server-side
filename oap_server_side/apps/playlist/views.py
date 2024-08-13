@@ -1,13 +1,16 @@
-from rest_framework import viewsets
+from rest_framework import viewsets,status
 from .models import PlaylistMedia, Playlist
-from .serializers import PlaylistMediaSerializer,PlaylistSerializer,PlaylistDetailSerializer
+from .serializers import PlaylistMediaSerializer,PlaylistSerializer,PlaylistDetailSerializer,AddToWatchLaterSerializer
 from apps.media.models import Media,User
+from apps.media.serializers import MediaSerializer
 from rest_framework.exceptions import PermissionDenied
 from .permissions import IsOwnerOrReadOnly
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
+
 #independetly fetch 
 #one endpoint
 #to add a function gets 3 differnet endpoints for the types
@@ -52,27 +55,27 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         if instance.type == Playlist.WATCHLATER:
             raise PermissionDenied("You cannot delete a Watch Later playlist.")
         instance.delete()
-
-    #get the playlists of a specific userA requested by userB
-
-    @action(detail=False, methods=['get'])
-    def user_playlists(self, request):
-        # Get the user ID from the request data
-        user_id = request.data.get('user_id')
+    #get the playlists of a specific userA requested by userB only public ones
+    @action(detail=False, methods=['get'], url_path='user_playlists/(?P<user_id>\d+)')
+    def user_playlists(self, request, user_id=None):
         if not user_id:
             return Response({"error": "User ID is required."}, status=400)
+        
         try:
             user_b = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return Response({"error": "User not found."}, status=404)
+        
         # Check if the requester is authenticated
         user_a = self.request.user
         if not user_a.is_authenticated:
             return Response({"error": "Authentication required."}, status=401)
-        # Fetch the private playlists of user B
+        
+        # Fetch the public playlists of user B
         playlists = Playlist.objects.filter(created_by=user_b, privacy_status=Playlist.PUBLIC)
+        
         # Serialize the playlists
-        serializer = self.get_serializer(playlists, many=True)
+        serializer = PlaylistSerializer(playlists, many=True)
         return Response(serializer.data)
     # types : collection : cannot add videos that are not urs
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
@@ -105,11 +108,11 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         serializer = PlaylistMediaSerializer(media, many=True)
         return Response(serializer.data)
     #get by role this is a function that gets a user either : all collections or all playlists and returns them :
-    @action(detail=False, methods=['get'])
-    def get_by_Role(self, request):
-        # Get the user ID from the request data
-        user_id = request.data.get('user_id')
-        type = request.data.get('type')
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def get_playlist_by_Role(self, request):
+        user_id = request.query_params.get('user_id')
+        type = request.query_params.get('type')
+
         if not user_id:
             return Response({"error": "User ID is required."}, status=400)
         try:
@@ -117,12 +120,11 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         except User.DoesNotExist:
             return Response({"error": "User not found."}, status=404)
         if not type:
-            return Response({"error": "playlist type is required"}, status=404)
-        # Check if the requester is authenticated
-        # Fetch the private playlists of user B
-        playlists = Playlist.objects.filter(created_by=user,privacy_status=Playlist.PUBLIC,type =type )
-        # Serialize the playlists
-        serializer = self.get_serializer(playlists, many=True)
+            return Response({"error": "Playlist type is required."}, status=400)
+
+        # Filter based on query parameters
+        queryset = self.get_queryset().filter(created_by=user, privacy_status=Playlist.PUBLIC, type=type)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
         
@@ -146,40 +148,75 @@ class PlaylistMediaViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("You are not the owner of this playlist.")
         #if watch later exists add the media to it, otherwise create it 
         if playlist.type == Playlist.WATCHLATER:
-            watch_later_playlist = Playlist.objects.filter(created_by=user, type=Playlist.WATCHLATER).first()
-            if not watch_later_playlist:
-                watch_later_playlist = Playlist.objects.create(
-                    name="Watch Later",
-                    description="Automatically created Watch Later playlist",
-                    type=Playlist.WATCHLATER,
-                    privacy_status=Playlist.PRIVATE,  # Example privacy status, adjust as needed
-                    created_by=user
-                )
+            raise PermissionDenied("Creation of 'Watch Later' playlist is not allowed.")
         if playlist.type == Playlist.COLLECTION:
             media = Media.objects.filter(uploaderID=user)
             if serializer.validated_data['media'] not in media:
                 raise PermissionDenied("Cannot add media you do not own to a collection.")
         serializer.save(added_by=user, playlist=playlist)
-    #rethreive all the videos of a channel    
-    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
-    def get_channel_videos(self, request):
-        # types : collection : cannot add videos that are not urs
-        user_id = request.data.get('user_id')
-        # Validate IDs
-        if not user_id:
-            return Response({"error": " User ID required"}, status=400)
+    #rethreive all the videos uploaded by the channel    
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
+    def get_user_media(self, request, pk=None):
+        # Validate the pk (user_id) parameter
+        if not pk:
+            return Response({"error": "User ID is required."}, status=400)
+
         try:
-            user= User.objects.get(id=user_id)
+            user = User.objects.get(id=pk)
         except User.DoesNotExist:
-            return Response({"error": "User not found."}, status=404)
-        Playlists= Playlist.objects.filter(created_by=user, status=Playlist.PUBLIC).prefetch_related('media__video_media')
-        all_media =[]
-        for playlist in Playlists :
-            media = PlaylistMedia.objects.filter(playlist=playlist)
-            all_media.extend(media)
-        serializer = PlaylistMediaSerializer(all_media, many=True)
+            raise NotFound({"error": "User not found."})
+
+        # Filter media items uploaded by the user
+        media_items = Media.objects.filter(uploaderID=user)
+        serializer = MediaSerializer(media_items, many=True)
         return Response(serializer.data)
-
-
-
     
+
+
+#WATCH LATER VIEW SET: 
+class WatchLaterViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+    @action(detail=False, methods=['post'], url_path='add')
+    def add_to_watch_later(self, request):
+            serializer = AddToWatchLaterSerializer(data=request.data)
+
+            if serializer.is_valid():
+                user = request.user
+                
+                media_id = serializer.validated_data['media_id']
+                print(media_id)
+                # Retrieve or create the "Watch Later" playlist
+                playlist, created = Playlist.objects.get_or_create(
+                    name='Watch Later',
+                    created_by=user,
+                    defaults={
+                        'description': 'Videos to watch later',
+                        'privacy_status': Playlist.PRIVATE,
+                        'type': Playlist.WATCHLATER
+                    }
+                )
+
+                try:
+                    media = Media.objects.get(id=media_id)
+                    
+                    # Check if the media is already in the playlist
+                    if PlaylistMedia.objects.filter(playlist=playlist, media=media).exists():
+                        return Response({"message": "Video already added to Watch Later playlist"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    # Add media to the playlist
+                    PlaylistMedia.objects.create(playlist=playlist, media=media, added_by=user)
+                    
+                    return Response({"message": "Video added to Watch Later playlist"}, status=status.HTTP_200_OK)
+                except Media.DoesNotExist:
+                    return Response({'message': 'Media not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    @action(detail=False, methods=['get'], url_path='get')
+    def list_watch_later(self, request):
+        user = request.user
+        try:
+            playlist = Playlist.objects.get(name='Watch Later', created_by=user)
+            playlist_media = PlaylistMedia.objects.filter(playlist=playlist)
+            serializer = PlaylistMediaSerializer(playlist_media, many=True)
+            return Response({"user_id": user.id, "watch_later": serializer.data}, status=status.HTTP_200_OK)
+        except Playlist.DoesNotExist:
+            return Response({'message': 'Watch Later playlist not found.'}, status=status.HTTP_404_NOT_FOUND)

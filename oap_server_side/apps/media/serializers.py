@@ -12,6 +12,8 @@ class LikeSerializer(serializers.ModelSerializer):
 class MediaSerializer(serializers.ModelSerializer):
     likes = serializers.SerializerMethodField()#add a new field to the serializer read-only ,calls a method on the serializer class it is attached to.
     views = serializers.SerializerMethodField()
+    category_name = serializers.SerializerMethodField()  # Add this field
+
 
     class Meta:
         model = Media
@@ -19,11 +21,15 @@ class MediaSerializer(serializers.ModelSerializer):
         read_only_fields = ['uploadDate']
 
 
+
     def get_likes(self, obj):
         return Like.objects.filter(mediaID=obj).count()
     
     def get_views(self, obj):
         return View.objects.filter(mediaID=obj).count()
+    
+    def get_category_name(self, obj):
+        return obj.categoryID.name
     
 
 class CategorySerializer(serializers.ModelSerializer):
