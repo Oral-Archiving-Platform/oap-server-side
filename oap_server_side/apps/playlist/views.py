@@ -1,6 +1,6 @@
 from rest_framework import viewsets,status
 from .models import PlaylistMedia, Playlist
-from .serializers import PlaylistMediaSerializer,PlaylistSerializer,PlaylistDetailSerializer,AddToWatchLaterSerializer
+from .serializers import PlaylistMediaSerializer,PlaylistSerializer,PlaylistDetailSerializer,AddToWatchLaterSerializer,PLaylistCreateSerializer
 from apps.media.models import Media,User
 from apps.media.serializers import MediaSerializer
 from rest_framework.exceptions import PermissionDenied
@@ -43,6 +43,23 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         if playlist_type == Playlist.WATCHLATER :
             raise PermissionDenied("You already have a Watch Later playlist.")
         serializer.save(created_by=self.request.user)
+  #new function :
+    @action(detail=False, methods=['post'], url_path='create_playlists')
+    def create_playlist(self, request):
+        user = self.request.user
+        serializer = PLaylistCreateSerializer(data=request.data)
+            # Validate the data
+        if serializer.is_valid():
+            playlist_type = serializer.validated_data.get('type')
+                
+                # Prevent creation of playlists of type 'WATCHLATER'
+            if playlist_type == Playlist.WATCHLATER:
+                raise PermissionDenied("You already have a Watch Later playlist you cannot create one.")
+
+                # Save the playlist, automatically setting 'created_by' to the current user
+            serializer.save(created_by=user)
+            return Response("sucessfully created", status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     def perform_update(self, serializer):
         obj = serializer.instance
         if obj.created_by != self.request.user:
@@ -70,43 +87,45 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         user_a = self.request.user
         if not user_a.is_authenticated:
             return Response({"error": "Authentication required."}, status=401)
-        
+        if not User.objects.get(id=user_id):
+            return Response({"error":"user id is required"}, status=401)
         # Fetch the public playlists of user B
         playlists = Playlist.objects.filter(created_by=user_b, privacy_status=Playlist.PUBLIC)
         
         # Serialize the playlists
         serializer = PlaylistSerializer(playlists, many=True)
         return Response(serializer.data)
-    # types : collection : cannot add videos that are not urs
+    # this is new function
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def user_media(self, request):
         # Get the user ID and playlist ID from the request parameters 
-        user_id = request.data.get('user_id')
-        playlist_id = request.data.get('playlist_id')
+        user_id = request.query_params.get('user_id')  # Use query_params for GET request
+        playlist_id = request.query_params.get('playlist_id')  # Use query_params for GET request
         
         # Validate IDs
         if not user_id or not playlist_id:
-            return Response({"error": "Both User ID and Playlist ID are required."}, status=400)
+            return Response({"error": "Both User ID and Playlist ID are required."}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             user_b = User.objects.get(id=user_id)
-
-            playlist = Playlist.objects.get(id=playlist_id,created_by=user_id)
+            playlist = Playlist.objects.get(id=playlist_id, created_by=user_b)
         except User.DoesNotExist:
-            return Response({"error": "User not found."}, status=404)
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
         except Playlist.DoesNotExist:
-            return Response({"error": "Playlist not found."}, status=404)
+            return Response({"error": "Playlist not found."}, status=status.HTTP_404_NOT_FOUND)
+        
         # Check if the requester is authenticated
-        user_a = self.request.user
+        user_a = request.user
         if not user_a.is_authenticated:
-            return Response({"error": "Authentication required."}, status=401)
+            return Response({"error": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+        
         # Check permissions to access the playlist's media
         if not (playlist.privacy_status == Playlist.PUBLIC or playlist.created_by == user_a or user_a == user_b):
-            return Response({"error": "You do not have permission to access media in this playlist."}, status=403)
+            return Response({"error": "You do not have permission to access media in this playlist."}, status=status.HTTP_403_FORBIDDEN)
         # Fetch the media of the playlist
         media = PlaylistMedia.objects.filter(playlist=playlist)
         serializer = PlaylistMediaSerializer(media, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     #get by role this is a function that gets a user either : all collections or all playlists and returns them :
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def get_playlist_by_Role(self, request):
@@ -154,6 +173,39 @@ class PlaylistMediaViewSet(viewsets.ModelViewSet):
             if serializer.validated_data['media'] not in media:
                 raise PermissionDenied("Cannot add media you do not own to a collection.")
         serializer.save(added_by=user, playlist=playlist)
+    # this is in progresss
+    def add_media(self, serializer):
+        # Extract the media ID and playlist ID from the validated data
+        media_id = serializer.validated_data.get('media_id')
+        playlist_id = serializer.validated_data.get('playlist_id')
+
+        # Fetch the media and playlist objects
+        try:
+            media = Media.objects.get(id=media_id)
+            playlist = Playlist.objects.get(id=playlist_id)
+        except Media.DoesNotExist:
+            raise PermissionDenied("Media not found.")
+        except Playlist.DoesNotExist:
+            raise PermissionDenied("Playlist not found.")
+        
+        # Check if the user is the owner of the playlist
+        user = self.request.user
+        if playlist.created_by != user:
+            raise PermissionDenied("You are not the owner of this playlist.")
+        
+        # Check playlist type and enforce restrictions
+        if playlist.type == Playlist.COLLECTION:
+            # Collection playlists can only have media owned by the user
+            if media.uploaderID != user:
+                raise PermissionDenied("Cannot add media you do not own to a collection.")
+        elif playlist.type == Playlist.REGULAR:
+            # Regular playlists can have any type of media
+            pass
+        else:
+            raise PermissionDenied("Invalid playlist type.")        
+        # Save the media with the correct 'added_by' and 'playlist' associations
+        serializer.save(added_by=user, playlist=playlist)
+
     #rethreive all the videos uploaded by the channel    
     @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
     def get_user_media(self, request, pk=None):
