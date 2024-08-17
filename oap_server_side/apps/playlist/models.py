@@ -1,6 +1,7 @@
 from django.db import models
 from apps.users.models import User
 from apps.media.models import Media
+from apps.channel.models import Channel
 
 class Playlist(models.Model):
     PLAYLIST='0'
@@ -32,6 +33,8 @@ class Playlist(models.Model):
             choices=PRIV_CHOICES,
             default=PUBLIC,  
         )
+    channel = models.ForeignKey(Channel, on_delete=models.CASCADE, null=True, blank=True)#allows for collections to have a channel and for playlists to not
+
     def __str__(self):
         return self.name
 
