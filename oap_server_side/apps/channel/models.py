@@ -8,6 +8,7 @@ class Channel(models.Model):
     creationDate = models.DateTimeField(auto_now_add=True)
     icon = models.ImageField(upload_to='channel_icons/', null=True, blank=True)
     cover = models.ImageField(upload_to='channel_covers/', null=True, blank=True)
+    
 
     def __str__(self):
         return self.name
@@ -26,6 +27,8 @@ class ChannelMembership(models.Model):
         choices=ROLE_CHOICES,
         default=OWNER,  
     )
+    class Meta:
+        unique_together = ('channelID', 'userID')
 
     def __str__(self):
         return self.role
