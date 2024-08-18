@@ -74,7 +74,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 40,
+    'PAGE_SIZE': 90,
 
 }
 LOGGING = {
