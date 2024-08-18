@@ -10,13 +10,23 @@ class PlaylistSerializer(serializers.ModelSerializer):
     class Meta:
         model = Playlist
         fields = '__all__'
-    
+        read_only_fields = ['id', 'created_at', 'updated_at', 'created_by']
+
+
+    def validate(self, data): 
+        if data.get('type') == Playlist.COLLECTION and not data.get('channel'):
+            raise serializers.ValidationError("Collections must be associated with a channel.")
+        if data.get('type') != Playlist.COLLECTION and data.get('channel'):
+            raise serializers.ValidationError("Only collections can be associated with a channel.")
+        return data
+
 
 class PlaylistMediaSerializer(serializers.ModelSerializer):
     video_details = serializers.SerializerMethodField(read_only=True)# Only for reading
     class Meta:
         model = PlaylistMedia
         fields = ['playlist', 'media', 'added_at', 'added_by', 'video_details']
+        read_only_fields = ['added_at', 'added_by']
 
     def get_video_details(self, obj):
         # Assuming the related_name for the ForeignKey from Video to Media is 'mediaID'

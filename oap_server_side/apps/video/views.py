@@ -1,5 +1,5 @@
 from rest_framework import viewsets, status
-from .permissions import IsVideoOwnerOrReadOnly
+from .permissions import IsChannelMemberOrReadOnly
 from .models import Video, Transcript, VideoSegment, Participant, Media
 from .serializers import VideoSerializer, TranscriptSerializer, VideoSegmentSerializer,ParticipantSerializer,VideoPageSerializer
 from rest_framework.response import Response
@@ -8,6 +8,7 @@ from datetime import datetime
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from ..media.services import create_media_with_category
 from django.db import transaction
+
 class VideoPageViewSet(viewsets.ModelViewSet):
     serializer_class = VideoPageSerializer
     queryset = Video.objects.all()
@@ -16,7 +17,11 @@ class VideoPageViewSet(viewsets.ModelViewSet):
 class VideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
-    permission_classes = [IsVideoOwnerOrReadOnly]
+
+    def get_permissions(self):
+        if self.action == 'create_complex_video':
+            return [IsChannelMemberOrReadOnly()]
+        return [IsAuthenticated()]
 
     @action(detail=False, methods=['post'], url_path='create-complex-video')
     def create_complex_video(self, request, *args, **kwargs):

@@ -1,6 +1,6 @@
 from django.db import models
-from apps.users.models import User
-from django.utils import timezone
+from ..users.models import User
+from ..channel.models import Channel
 
 class Category(models.Model):
     name = models.CharField(max_length=100,unique=True)
@@ -19,6 +19,7 @@ class Media(models.Model):
 
     title = models.CharField(max_length=100)
     uploaderID = models.ForeignKey(User, on_delete=models.CASCADE)
+    channelID = models.ForeignKey(Channel, on_delete=models.CASCADE)
     description = models.TextField()
     uploadDate = models.DateTimeField(auto_now_add=True)
     categoryID = models.ForeignKey(Category, on_delete=models.CASCADE)
@@ -54,7 +55,7 @@ class Comment(models.Model):
     mediaID = models.ForeignKey(Media, related_name='comments',on_delete=models.CASCADE)
     userID = models.ForeignKey(User, related_name='user_comments',on_delete=models.CASCADE)
     body = models.TextField()
-    created = models.DateTimeField(auto_now_add=True)#svaed just when object is created
+    created = models.DateTimeField(auto_now_add=True)#saved just when object is created
     updated = models.DateTimeField(auto_now=True) #changed whenever object saved
     parent = models.ForeignKey('self', null=True, blank=True, related_name='replies',on_delete=models.CASCADE)
 
