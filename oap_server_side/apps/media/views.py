@@ -1,5 +1,4 @@
-from ..users.permissions import IsAdmin
-from .permissions import IsOwnerOrReadOnly, IsChannelMemberOrReadOnly
+from .permissions import IsChannelMemberOrReadOnly
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from .models import Category, Media, Comment, View, Like
@@ -14,17 +13,17 @@ from rest_framework.permissions import IsAuthenticated
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAdmin, IsOwnerOrReadOnly]
 
 class MediaViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAdmin, IsOwnerOrReadOnly, IsChannelMemberOrReadOnly]
+    permission_classes = [ IsChannelMemberOrReadOnly]
     queryset = Media.objects.all()
     serializer_class = MediaSerializer
 
     def create(self, request, *args, **kwargs):
-        # Use a service to create media with category
         with transaction.atomic():
-            media, errors = create_media_with_category(request.data, request.data.get('categoryID'))
+            media_data = request.data.copy()
+            media_data["uploaderID"] = request.user.id
+            media, errors = create_media_with_category(media_data, media_data.get('categoryID'))
             if errors:
                 transaction.set_rollback(True)
                 return Response(errors, status=status.HTTP_400_BAD_REQUEST)

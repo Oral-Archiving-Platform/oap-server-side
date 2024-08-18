@@ -189,17 +189,6 @@ class PlaylistMediaViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         playlist = serializer.validated_data.get('playlist')
         user = self.request.user
-        if playlist.created_by != user:
-            raise PermissionDenied("You are not the owner of this playlist.")
-        #if watch later exists add the media to it, otherwise create it 
-        if playlist.type == Playlist.WATCHLATER:
-            raise PermissionDenied("Creation of 'Watch Later' playlist is not allowed.")
-        '''
-        removed and replaced by checking if media belongs to the channel
-        if playlist.type == Playlist.COLLECTION:
-            media = Media.objects.filter(uploaderID=user)
-            if serializer.validated_data['media'] not in media:
-                raise PermissionDenied("Cannot add media you do not own to a collection.")'''
         if playlist.type == Playlist.COLLECTION:
             if not playlist.channel:
                 raise PermissionDenied("This collection is not associated with any channel.")
@@ -218,6 +207,18 @@ class PlaylistMediaViewSet(viewsets.ModelViewSet):
             media = serializer.validated_data.get('media')
             if media.channelID != playlist.channel:
                 raise PermissionDenied("You can only add media that belongs to this channel.")
+        elif playlist.created_by != user:
+            raise PermissionDenied("You are not the owner of this playlist.")
+        #if watch later exists add the media to it, otherwise create it 
+        if playlist.type == Playlist.WATCHLATER:
+            raise PermissionDenied("Creation of 'Watch Later' playlist is not allowed.")
+        '''
+        removed and replaced by checking if media belongs to the channel
+        if playlist.type == Playlist.COLLECTION:
+            media = Media.objects.filter(uploaderID=user)
+            if serializer.validated_data['media'] not in media:
+                raise PermissionDenied("Cannot add media you do not own to a collection.")'''
+        
         serializer.save(added_by=user, playlist=playlist)
 
     #rethreive all the videos uploaded by the channel    

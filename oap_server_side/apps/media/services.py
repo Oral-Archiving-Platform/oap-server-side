@@ -15,10 +15,9 @@ def create_media_with_category(media_data, category_data=None):
     else:
         return None, "Invalid category data provided"
 
-    # Debugging print statement
     print("Media Data:", media_data)
 
-    # Create media
+    # Create media with that category
     media_serializer = MediaSerializer(data=media_data)
     if media_serializer.is_valid():
         media = media_serializer.save()

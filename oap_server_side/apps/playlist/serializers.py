@@ -26,6 +26,7 @@ class PlaylistMediaSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlaylistMedia
         fields = ['playlist', 'media', 'added_at', 'added_by', 'video_details']
+        read_only_fields = ['added_at', 'added_by']
 
     def get_video_details(self, obj):
         # Assuming the related_name for the ForeignKey from Video to Media is 'mediaID'
