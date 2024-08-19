@@ -11,6 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import View
+from django.db.models import Q
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
@@ -69,3 +70,23 @@ class UserActivityViewSet(viewsets.ViewSet):
                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    @action(detail=False, methods=['get'], url_path='search')
+    def search_media(self, request):
+        # Get the search query from request parameters
+        query = request.query_params.get('q', '')
+
+        if query:
+            # Filter media based on literal matching of title or description
+            media_results = Media.objects.filter(
+                Q(title__icontains=query) | Q(description__icontains=query)
+            )
+            
+            if media_results.exists():
+                    # Serialize the results using MediaSerializer
+                    serializer = MediaSerializer(media_results, many=True)
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                    # Return message if no media was found
+                return Response({"detail": "No media found matching the search query."}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({"detail": "No search query provided."}, status=status.HTTP_400_BAD_REQUEST)

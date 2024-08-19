@@ -1,6 +1,6 @@
 from rest_framework import viewsets,status
 from .models import PlaylistMedia, Playlist
-from .serializers import PlaylistMediaSerializer,PlaylistSerializer,PlaylistDetailSerializer,AddToWatchLaterSerializer,PLaylistCreateSerializer
+from .serializers import PlaylistMediaSerializer,PlaylistSerializer,PlaylistDetailSerializer,AddToWatchLaterSerializer,PLaylistCreateSerializer,MediaAddSerializer
 from apps.media.models import Media,User
 from apps.media.serializers import MediaSerializer
 from rest_framework.exceptions import PermissionDenied
@@ -148,6 +148,7 @@ class PlaylistViewSet(viewsets.ModelViewSet):
     
         
 class PlaylistMediaViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]  # Ensure user is authenticated
     queryset = PlaylistMedia.objects.all()
     serializer_class = PlaylistMediaSerializer
     #users can only add media to their own playlists and you can only add media you own to a collection
@@ -174,37 +175,34 @@ class PlaylistMediaViewSet(viewsets.ModelViewSet):
                 raise PermissionDenied("Cannot add media you do not own to a collection.")
         serializer.save(added_by=user, playlist=playlist)
     # this is in progresss
-    def add_media(self, serializer):
-        # Extract the media ID and playlist ID from the validated data
-        media_id = serializer.validated_data.get('media_id')
-        playlist_id = serializer.validated_data.get('playlist_id')
+    @action(detail=False, methods=['post'], url_path='add')
+    def add_media(self, request):
+        # Use the correct serializer for incoming data
+        serializer = MediaAddSerializer(data=request.data)
+        
+        # Validate the data first
+        if serializer.is_valid():
+            playlist = serializer.validated_data.get('playlist')
+            user = self.request.user
 
-        # Fetch the media and playlist objects
-        try:
-            media = Media.objects.get(id=media_id)
-            playlist = Playlist.objects.get(id=playlist_id)
-        except Media.DoesNotExist:
-            raise PermissionDenied("Media not found.")
-        except Playlist.DoesNotExist:
-            raise PermissionDenied("Playlist not found.")
-        
-        # Check if the user is the owner of the playlist
-        user = self.request.user
-        if playlist.created_by != user:
-            raise PermissionDenied("You are not the owner of this playlist.")
-        
-        # Check playlist type and enforce restrictions
-        if playlist.type == Playlist.COLLECTION:
-            # Collection playlists can only have media owned by the user
-            if media.uploaderID != user:
-                raise PermissionDenied("Cannot add media you do not own to a collection.")
-        elif playlist.type == Playlist.REGULAR:
-            # Regular playlists can have any type of media
-            pass
+            # Check if the user is the owner of the playlist
+            if playlist.created_by != user:
+                raise PermissionDenied("You are not the owner of this playlist.")
+            
+            # Check playlist type and ensure only the owner can add media to a collection
+            if playlist.type == Playlist.COLLECTION:
+                media = Media.objects.filter(uploaderID=user)
+                if serializer.validated_data['media'] not in media:
+                    raise PermissionDenied("Cannot add media you do not own to a collection.")
+            
+            # Save the media with the correct 'added_by' and 'playlist' associations
+            serializer.save(added_by=user, playlist=playlist)
+            
+            return Response({"status": "Media added successfully"}, status=status.HTTP_200_OK)
         else:
-            raise PermissionDenied("Invalid playlist type.")        
-        # Save the media with the correct 'added_by' and 'playlist' associations
-        serializer.save(added_by=user, playlist=playlist)
+            # Return validation errors
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
     #rethreive all the videos uploaded by the channel    
     @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])

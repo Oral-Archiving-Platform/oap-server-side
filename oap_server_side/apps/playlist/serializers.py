@@ -16,6 +16,10 @@ class PLaylistCreateSerializer(serializers.ModelSerializer):
         model= Playlist
         fields=[ 'name','description','type','privacy_status']
 
+class MediaAddSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PlaylistMedia
+        fields=['playlist', 'media']
 
 class PlaylistMediaSerializer(serializers.ModelSerializer):
     video_details = serializers.SerializerMethodField(read_only=True)# Only for reading
