@@ -70,7 +70,7 @@ class QuizViewSet(viewsets.ModelViewSet):
 
         QuizSubmission.objects.create(user=user, quiz=quiz, score=percentage_score)
         return Response({
-            "message": "Quiz submitted successfully.",
+            "message": "Quiz is submitted successfully.",
             "score": percentage_score,
             "feedback": feedback
         }, status=status.HTTP_201_CREATED)
