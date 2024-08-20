@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'apps.playlist',
     'apps.channel',
 
+    'apps.ebooks',
     'django_extensions',
     'rest_framework',
      'django_otp',
