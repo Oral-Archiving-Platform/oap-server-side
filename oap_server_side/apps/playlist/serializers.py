@@ -4,25 +4,35 @@ from apps.video.models import Video
 from apps.video.serializers import VideoSerializer
 import logging
 from apps.media.models import Media
+
 logger = logging.getLogger(__name__)
 
 class PlaylistSerializer(serializers.ModelSerializer):
     class Meta:
         model = Playlist
         fields = '__all__'
-    
-class PLaylistCreateSerializer(serializers.ModelSerializer):
+        read_only_fields = ['id', 'created_at', 'updated_at', 'created_by']
+
+    def validate(self, data):
+        if data.get('type') == Playlist.COLLECTION and not data.get('channel'):
+            raise serializers.ValidationError("Collections must be associated with a channel.")
+        if data.get('type') != Playlist.COLLECTION and data.get('channel'):
+            raise serializers.ValidationError("Only collections can be associated with a channel.")
+        return data
+
+class PlaylistCreateSerializer(serializers.ModelSerializer):
     class Meta:
-        model= Playlist
-        fields=[ 'name','description','type','privacy_status']
+        model = Playlist
+        fields = ['name', 'description', 'type', 'privacy_status']
 
 class MediaAddSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlaylistMedia
-        fields=['playlist', 'media']
+        fields = ['playlist', 'media']
 
 class PlaylistMediaSerializer(serializers.ModelSerializer):
-    video_details = serializers.SerializerMethodField(read_only=True)# Only for reading
+    video_details = serializers.SerializerMethodField(read_only=True)  # Only for reading
+
     class Meta:
         model = PlaylistMedia
         fields = ['playlist', 'media', 'added_at', 'added_by', 'video_details']
@@ -31,20 +41,19 @@ class PlaylistMediaSerializer(serializers.ModelSerializer):
     def get_video_details(self, obj):
         # Assuming the related_name for the ForeignKey from Video to Media is 'mediaID'
         # Adjust this if the related_name is differently defined
-        video = obj.media.video_media.first() #find a better way to handl ethis
+        video = obj.media.video_media.first()  # find a better way to handle this
         if video:
             return VideoSerializer(video).data
         return None
 
-
-
 class PlaylistDetailSerializer(serializers.ModelSerializer):
     playlist_media = PlaylistMediaSerializer(many=True, read_only=True, source='playlist_media_set')
+    
     logger.info("PlaylistDetailSerializer")
+
     class Meta:
         model = Playlist
-        fields = ( 'name','description','created_by','created_at', 'updated_at','created_by','type', 'privacy_status', 'playlist_media')
-
+        fields = ['name', 'description', 'created_by', 'created_at', 'updated_at', 'created_by', 'type', 'privacy_status', 'playlist_media']
 
 class AddToWatchLaterSerializer(serializers.Serializer):
     media_id = serializers.IntegerField()

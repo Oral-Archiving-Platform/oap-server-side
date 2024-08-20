@@ -7,6 +7,7 @@ router = DefaultRouter()
 router = DefaultRouter()
 router.register(r'playlist', PlaylistViewSet, basename='playlist')
 router.register(r'playlist_media', PlaylistMediaViewSet,basename='playlist_media')
+
 router.register(r'watchlater', WatchLaterViewSet, basename='watchlater')
 
 
