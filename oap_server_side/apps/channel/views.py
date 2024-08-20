@@ -49,7 +49,14 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             serializer.save(userID=user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+class UserChannelViewSet(viewsets.ModelViewSet):
+    queryset = Channel.objects.all()
+    serializer_class = ChannelSerializer
 
-        
+    def get_queryset(self):
+        # Get channels where the current user is the owner
+        return Channel.objects.filter(
+            channelmembership__userID=self.request.user,
+        )
 
 
