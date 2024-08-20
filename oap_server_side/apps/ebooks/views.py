@@ -8,6 +8,7 @@ class EbookViewSet(viewsets.ModelViewSet):
     queryset = Ebook.objects.all()
     serializer_class = EbookSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    
 from rest_framework.decorators import action
 
 class QuizViewSet(viewsets.ModelViewSet):
