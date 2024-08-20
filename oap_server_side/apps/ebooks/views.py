@@ -8,7 +8,7 @@ class EbookViewSet(viewsets.ModelViewSet):
     queryset = Ebook.objects.all()
     serializer_class = EbookSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    
+
 from rest_framework.decorators import action
 
 class QuizViewSet(viewsets.ModelViewSet):
@@ -124,6 +124,7 @@ class QuizViewSet(viewsets.ModelViewSet):
             "quiz_id": new_quiz.id,
             "questions": QuestionSerializer(selected_questions, many=True).data
         }, status=status.HTTP_201_CREATED)
+    
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
@@ -144,7 +145,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 question_text=data.get('question_text'),
                 type=question_type,
                 options=options,
-                correct_option=correct_option,  # Save the correct option to the new field
+                correct_option=correct_option,  
                 correct_answer=None  # Correct answer is not used for multiple choice
             )
 
