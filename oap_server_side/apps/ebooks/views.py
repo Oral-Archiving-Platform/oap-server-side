@@ -9,6 +9,9 @@ class EbookViewSet(viewsets.ModelViewSet):
     serializer_class = EbookSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    def perform_create(self, serializer):
+        serializer.save(uploaderID=self.request.user)
+        
 from rest_framework.decorators import action
 
 class QuizViewSet(viewsets.ModelViewSet):

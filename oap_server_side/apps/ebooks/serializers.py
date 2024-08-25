@@ -7,7 +7,8 @@ class EbookSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Ebook
-        fields = '__all__'
+        exclude = ['uploaderID']
+    
 
 
 class QuestionSerializer(serializers.ModelSerializer):

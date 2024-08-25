@@ -5,7 +5,7 @@ from apps.users.models import User
 class Ebook(Media):
     file = models.FileField(upload_to='ebooks/')
     drm_protected = models.BooleanField(default=True)
-
+    
     def __str__(self):
         return self.title
 
