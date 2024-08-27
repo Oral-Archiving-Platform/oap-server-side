@@ -8,7 +8,9 @@ from apps.ebooks.serializers import EbookInfoSerializer
 from django.db.models import Q
 from .models import Ebook
 from .serializers import EbookSearchSerializer
-from django.contrib.postgres.search import TrigramSimilarity
+from rest_framework.decorators import action
+from apps.media.models import Comment
+from apps.media.serializers import CommentSerializer
 
 class EbookInfoView(generics.RetrieveAPIView):  # Change from ListAPIView to RetrieveAPIView
     queryset = Ebook.objects.all()
@@ -36,7 +38,29 @@ class EbookViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(uploaderID=self.request.user)
     
-from rest_framework.decorators import action
+
+    @action(detail=True, methods=['get', 'post'], permission_classes=[permissions.IsAuthenticated])
+    def comments(self, request, pk=None):
+        ebook = self.get_object()  # Get the current Ebook instance
+        
+        if request.method == 'POST':
+            # Copy request data to avoid modifying the original request
+            data = request.data.copy()
+            # Set mediaID to the current Ebook instance
+            data['mediaID'] = ebook.id
+            
+            # Create a new comment with the updated data
+            serializer = CommentSerializer(data=data)
+            if serializer.is_valid():
+                serializer.save(userID=request.user)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == 'GET':
+            # Retrieve all comments for the current Ebook
+            comments = Comment.objects.filter(mediaID=ebook, parent__isnull=True)
+            serializer = CommentSerializer(comments, many=True)
+            return Response(serializer.data)
 
 class QuizViewSet(viewsets.ModelViewSet):
     queryset = Quiz.objects.all()
