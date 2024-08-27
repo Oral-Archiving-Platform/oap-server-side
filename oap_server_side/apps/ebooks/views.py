@@ -228,3 +228,24 @@ class QuizSubmissionViewSet(viewsets.ModelViewSet):
 
         QuizSubmission.objects.create(user=user, quiz=quiz, score=total_score)
         return Response({"message": "Quiz submitted successfully.", "score": total_score}, status=status.HTTP_201_CREATED)
+    
+     # New custom action
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticatedOrReadOnly])
+    def my_quizzes(self, request):
+        user = request.user
+        if not user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Fetch the user's submissions
+        submissions = QuizSubmission.objects.filter(user=user)
+
+        # Prepare the response data
+        data = [
+            {
+                "quiz_title": submission.quiz.title,
+                "score": submission.score
+            }
+            for submission in submissions
+        ]
+
+        return Response(data, status=status.HTTP_200_OK)
