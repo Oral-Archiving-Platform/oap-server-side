@@ -5,7 +5,8 @@ from apps.users.models import User
 class Ebook(Media):
     file = models.FileField(upload_to='ebooks/')
     drm_protected = models.BooleanField(default=True)
-    
+    thumbnail = models.ImageField(upload_to='thumbnails/', null=True, blank=True)  # New field for the thumbnail
+
     def __str__(self):
         return self.title
 

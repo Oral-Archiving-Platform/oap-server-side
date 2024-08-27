@@ -3,6 +3,30 @@ from rest_framework.response import Response
 from .models import Ebook, Quiz, Question, QuizSubmission
 from .serializers import EbookSerializer, QuizSerializer, QuestionSerializer, QuizSubmissionSerializer
 from random import sample
+from rest_framework import generics, permissions
+from apps.ebooks.serializers import EbookInfoSerializer
+from django.db.models import Q
+from .models import Ebook
+from .serializers import EbookSearchSerializer
+from django.contrib.postgres.search import TrigramSimilarity
+
+class EbookInfoView(generics.RetrieveAPIView):  # Change from ListAPIView to RetrieveAPIView
+    queryset = Ebook.objects.all()
+    serializer_class = EbookInfoSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+
+
+class EbookSearchView(generics.ListAPIView):
+    serializer_class = EbookSearchSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        query = self.request.query_params.get('title', '')
+        if not query:
+            return Ebook.objects.none()
+        return Ebook.objects.filter(title__icontains=query)
+
 
 class EbookViewSet(viewsets.ModelViewSet):
     queryset = Ebook.objects.all()
@@ -11,7 +35,7 @@ class EbookViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(uploaderID=self.request.user)
-        
+    
 from rest_framework.decorators import action
 
 class QuizViewSet(viewsets.ModelViewSet):
