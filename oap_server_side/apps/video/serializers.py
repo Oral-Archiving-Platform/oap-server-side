@@ -18,9 +18,11 @@ class VideoSerializer(serializers.ModelSerializer):
         return representation
     def get_is_liked_by_user(self, obj):
         request = self.context.get('request')
-        user = request.user
-        if user.is_authenticated:
-            return obj.mediaID.is_liked_by_user(user)
+        if request and hasattr(request, 'user'):
+            user = request.user
+            if user.is_authenticated:
+                return obj.mediaID.is_liked_by_user(user)
+
         return False
         
 class VideoPageSerializer(serializers.ModelSerializer):
