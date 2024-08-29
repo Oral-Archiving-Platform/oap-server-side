@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category, Media, Comment, View, Like
+from .models import Category, Media, Comment, View, Like,OriginalLanguage
 
 
 class LikeSerializer(serializers.ModelSerializer):
@@ -36,7 +36,10 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = '__all__'
-
+class OriginalLanguageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OriginalLanguage
+        fields = '__all__'
 
 class RecursiveField(serializers.Serializer):
     def to_representation(self, value):
@@ -44,12 +47,18 @@ class RecursiveField(serializers.Serializer):
         return serializer.data
 
 class CommentSerializer(serializers.ModelSerializer):
+    
     replies = RecursiveField(many=True, required=False)
+    firstName = serializers.SerializerMethodField()
+    lastName = serializers.SerializerMethodField()
     class Meta:
         model = Comment
         fields = '__all__'
         read_only_fields = ['userID']
-
+    def get_firstName(self, obj):
+        return obj.userID.first_name
+    def get_lastName(self, obj):
+        return obj.userID.last_name
 
     def validate(self, data):
         if 'parent' in data and data['parent'] is not None:

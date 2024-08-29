@@ -5,7 +5,7 @@ from ..media.serializers import MediaSerializer
 class VideoSerializer(serializers.ModelSerializer):
 
     media_details = MediaSerializer(source='mediaID', read_only=True)
-
+    is_liked_by_user = serializers.SerializerMethodField()
 
     class Meta:
         model = Video
@@ -16,6 +16,13 @@ class VideoSerializer(serializers.ModelSerializer):
         media_representation = MediaSerializer(instance.mediaID).data
         representation['media_details'] = media_representation
         return representation
+    def get_is_liked_by_user(self, obj):
+        request = self.context.get('request')
+        user = request.user
+        if user.is_authenticated:
+            return obj.mediaID.is_liked_by_user(user)
+        return False
+        
 class VideoPageSerializer(serializers.ModelSerializer):
 
     media_details = MediaSerializer(source='mediaID', read_only=True)
