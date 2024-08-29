@@ -11,13 +11,60 @@ from .serializers import EbookSearchSerializer
 from rest_framework.decorators import action
 from apps.media.models import Comment
 from apps.media.serializers import CommentSerializer
+from apps.playlist.models import Playlist, PlaylistMedia
+from apps.media.models import Media
 
-class EbookInfoView(generics.RetrieveAPIView):  # Change from ListAPIView to RetrieveAPIView
+class ReadLaterViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=False, methods=['post'], url_path='add')
+    def add_to_read_later(self, request):
+        user = request.user
+        media_id = request.data.get('media_id')
+
+        # Retrieve or create the "Read Later" playlist for ebooks
+        playlist, created = Playlist.objects.get_or_create(
+            name='Read Later',
+            created_by=user,
+            defaults={
+                'description': 'Ebooks to read later',
+                'privacy_status': Playlist.PRIVATE,
+                'type': Playlist.WATCHLATER  # You can reuse the WATCHLATER type
+            }
+        )
+
+        try:
+            ebook = Ebook.objects.get(id=media_id)
+
+            # Check if the ebook is already in the playlist
+            if PlaylistMedia.objects.filter(playlist=playlist, media=ebook).exists():
+                return Response({"message": "Ebook already added to Read Later playlist"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Add ebook to the playlist
+            PlaylistMedia.objects.create(playlist=playlist, media=ebook, added_by=user)
+            return Response({"message": "Ebook added to Read Later playlist"}, status=status.HTTP_200_OK)
+        
+        except Ebook.DoesNotExist:
+            return Response({'message': 'Ebook not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['get'], url_path='list')
+    def list_read_later(self, request):
+        user = request.user
+        try:
+            playlist = Playlist.objects.get(name='Read Later', created_by=user)
+            playlist_media = PlaylistMedia.objects.filter(playlist=playlist)
+            media_ids = playlist_media.values_list('media_id', flat=True)
+            ebooks = Ebook.objects.filter(id__in=media_ids)
+            # Serialize the ebooks (assuming you have an EbookSerializer)
+            serializer = EbookSerializer(ebooks, many=True)
+            return Response({"user_id": user.id, "read_later": serializer.data}, status=status.HTTP_200_OK)
+        except Playlist.DoesNotExist:
+            return Response({'message': 'Read Later playlist not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+class EbookInfoView(generics.RetrieveAPIView):  
     queryset = Ebook.objects.all()
     serializer_class = EbookInfoSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-
 
 class EbookSearchView(generics.ListAPIView):
     serializer_class = EbookSearchSerializer
