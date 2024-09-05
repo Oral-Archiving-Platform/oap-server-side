@@ -40,6 +40,7 @@ class Video(models.Model):
     def __str__(self):
         return self.videoURL
     
+
 class VideoSegment(models.Model):
     VideoID = models.ForeignKey(Video, on_delete=models.CASCADE)
     segmentNumber = models.IntegerField()
