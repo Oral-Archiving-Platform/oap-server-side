@@ -5,7 +5,7 @@ from apps.media.serializers import CommentSerializer
 
 class EbookSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='categoryID.name', read_only=True)
-
+    uploader_name = serializers.CharField(source='uploaderID.username', read_only=True) 
     class Meta:
         model = Ebook
         exclude = ['uploaderID']
