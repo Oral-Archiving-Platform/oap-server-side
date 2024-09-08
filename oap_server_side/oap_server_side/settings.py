@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -41,6 +42,9 @@ INSTALLED_APPS = [
     'apps.users',
     'apps.video',
     'apps.playlist',
+    'apps.channel',
+
+    'apps.ebooks',
     'django_extensions',
     'rest_framework',
      'django_otp',
@@ -60,13 +64,16 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 SITE_ID = 1
 
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
+
 
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
     # i think  it is already done automatically for generic viewsets so why add it?
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly'
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
        'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -74,7 +81,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 40,
+    'PAGE_SIZE': 90,
 
 }
 LOGGING = {
@@ -242,3 +249,14 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'oralarchivingplatform@gmail.com'  
+EMAIL_HOST_PASSWORD = 'kmtg hbre uqgg qpcl'  
+DEFAULT_FROM_EMAIL = 'OAP <oralarchivingplatform@gmail.com>'
+
+# Frontend URL for invitation links
+FRONTEND_URL = 'http://localhost:3000'  # Replace with your frontend URL

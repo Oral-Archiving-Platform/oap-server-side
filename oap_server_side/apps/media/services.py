@@ -7,6 +7,7 @@ def create_media_with_category(media_data, category_data=None):
     # Get or create category
     if isinstance(category_data, dict):
         category_name = category_data.get('name')
+        print("Category Name:", category_name)
         category, created = Category.objects.get_or_create(name=category_name)
         media_data['categoryID'] = category.id
     elif isinstance(category_data, str):  # Assuming category_data can also be a string for category name
@@ -15,10 +16,9 @@ def create_media_with_category(media_data, category_data=None):
     else:
         return None, "Invalid category data provided"
 
-    # Debugging print statement
     print("Media Data:", media_data)
 
-    # Create media
+    # Create media with that category
     media_serializer = MediaSerializer(data=media_data)
     if media_serializer.is_valid():
         media = media_serializer.save()
