@@ -6,10 +6,10 @@ from django.db import IntegrityError
 from apps.users.models import User
 
 class ChannelSerializer(serializers.ModelSerializer):
-    subscription_count = serializers.SerializerMethodField(read_only=True)
+    subscribers = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = Channel
-        fields = ['id', 'name', 'description', 'creationDate', 'icon', 'cover','subscription_count']
+        fields = ['id', 'name', 'description', 'creationDate', 'icon', 'cover','subscribers']
         read_only_fields = ['id', 'creationDate']
 
     @transaction.atomic
@@ -22,7 +22,7 @@ class ChannelSerializer(serializers.ModelSerializer):
             role=ChannelMembership.OWNER
         )
         return channel
-    def get_subscription_count(self, obj):
+    def get_subscribers(self, obj):
         return Subscription.objects.filter(channelID=obj).count()
 
 

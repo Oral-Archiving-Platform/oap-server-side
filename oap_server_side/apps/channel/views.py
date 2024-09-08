@@ -18,7 +18,7 @@ class ChannelViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self): #get all channels of the usereven those where he is a member
         user = self.request.user
-        return Channel.objects.filter(channelmembership__userID=user).distinct()
+        return Channel.objects.all()
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
