@@ -60,6 +60,30 @@ class ReadLaterViewSet(viewsets.ViewSet):
             return Response({"user_id": user.id, "read_later": serializer.data}, status=status.HTTP_200_OK)
         except Playlist.DoesNotExist:
             return Response({'message': 'Read Later playlist not found.'}, status=status.HTTP_404_NOT_FOUND)
+    @action(detail=False, methods=['delete'], url_path='remove')
+    def remove_from_read_later(self, request):
+        user = request.user
+        media_id = request.data.get('media_id')
+
+        try:
+            ebook = Ebook.objects.get(id=media_id)
+
+            # Retrieve the user's "Read Later" playlist
+            playlist = Playlist.objects.get(name='Read Later', created_by=user)
+
+            # Check if the ebook is in the playlist
+            playlist_media = PlaylistMedia.objects.filter(playlist=playlist, media=ebook)
+            if not playlist_media.exists():
+                return Response({"message": "Ebook not found in Read Later playlist"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Remove the ebook from the playlist
+            playlist_media.delete()
+            return Response({"message": "Ebook removed from Read Later playlist"}, status=status.HTTP_200_OK)
+
+        except Ebook.DoesNotExist:
+            return Response({'message': 'Ebook not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except Playlist.DoesNotExist:
+            return Response({'message': 'Read Later playlist not found.'}, status=status.HTTP_404_NOT_FOUND)
 
 class EbookInfoView(generics.RetrieveAPIView):  
     queryset = Ebook.objects.all()
