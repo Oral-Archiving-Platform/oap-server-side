@@ -81,11 +81,12 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         user = self.request.user
         playlist_type = serializer.validated_data.get('type')
         channel = serializer.validated_data.get('channel')
-        if not channel:
-            raise PermissionDenied("Collections must be associated with a channel.")
 
         # Check if the user is the owner or editor of the channel before being able to create a collection for it
         if playlist_type == Playlist.COLLECTION:
+            if not channel:
+                raise PermissionDenied("Collections must be associated with a channel.")
+
             is_channel_owner = ChannelMembership.objects.filter(
                 userID=self.request.user,
                 channelID=channel,
@@ -97,8 +98,11 @@ class PlaylistViewSet(viewsets.ModelViewSet):
 
         # Cannot create playlists of type watchlater
         if playlist_type == Playlist.WATCHLATER:
-            raise PermissionDenied("You already have a Watch Later playlist.")
-        
+            raise PermissionDenied("You already have a Watch Later playlist.")            
+
+            
+
+
         serializer.save(created_by=user)
 
     def perform_update(self, serializer):
