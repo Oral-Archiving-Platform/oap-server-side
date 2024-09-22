@@ -80,7 +80,7 @@ class PlaylistViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         user = self.request.user
         playlist_type = serializer.validated_data.get('type')
-        channel = serializer.validated_data.get('channel')
+        channel = self.request.data.get('channel', None)
 
         # Check if the user is the owner or editor of the channel before being able to create a collection for it
         if playlist_type == Playlist.COLLECTION:
@@ -137,7 +137,7 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         playlists = Playlist.objects.filter(created_by=user_b, privacy_status=Playlist.PUBLIC)
         serializer = PlaylistSerializer(playlists, many=True)
         return Response(serializer.data)
-
+    
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def user_media(self, request):
         user_id = request.query_params.get('user_id')
@@ -279,4 +279,26 @@ class PlaylistMediaViewSet(viewsets.ModelViewSet):
         playlists = Playlist.objects.filter(created_by=user, privacy_status=Playlist.PUBLIC)
         media = PlaylistMedia.objects.filter(playlist__in=playlists)
         serializer = PlaylistMediaSerializer(media, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+   
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
+    def collection_media(self, request, pk=None):
+        """
+        Retrieve media within a specific collection (playlist of type COLLECTION).
+        Only requires the user to be authenticated.
+        """
+        try:
+            # Get the playlist (collection) by its primary key (ID) and ensure it's of type COLLECTION
+            collection = Playlist.objects.get(id=pk, type=Playlist.COLLECTION)
+        except Playlist.DoesNotExist:
+            return Response({"error": "Collection not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if the collection is public, or else deny access
+        if collection.privacy_status == Playlist.PRIVATE:
+            return Response({"error": "This collection is private."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Retrieve media associated with this collection
+        media_items = PlaylistMedia.objects.filter(playlist=collection)
+        serializer = PlaylistMediaSerializer(media_items, many=True)
+
         return Response(serializer.data, status=status.HTTP_200_OK)
