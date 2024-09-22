@@ -14,6 +14,7 @@ class VideoPageViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all()
     permission_classes = [AllowAny]
 
+
 class VideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
@@ -65,6 +66,14 @@ class VideoViewSet(viewsets.ModelViewSet):
                     'error': str(e.args[0]),
                     'details': e.args[1]
                 }, status=status.HTTP_400_BAD_REQUEST)
+    @action(detail=False, methods=['get'])
+    def get_channel_videos(self, request):
+        channel_id = request.query_params.get('channel_id')
+        if not channel_id:
+            return Response({"error": "channel_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+        videos = self.queryset.filter(mediaID__channelID=channel_id)
+        serializer = VideoSerializer(videos, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class ParticipantViewSet(viewsets.ModelViewSet):
     queryset = Participant.objects.all()
