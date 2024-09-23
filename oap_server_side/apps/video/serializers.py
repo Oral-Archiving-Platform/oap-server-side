@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Video, Transcript, VideoSegment,Participant
+from .models import Video, Transcript, VideoSegment,Participant,City, Monument
 from ..media.serializers import MediaSerializer
 
 class VideoSerializer(serializers.ModelSerializer):
@@ -53,4 +53,14 @@ class TranscriptSerializer(serializers.ModelSerializer):
 class VideoSegmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = VideoSegment
+        fields = '__all__'
+
+class CitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = City
+        fields = '__all__'
+
+class MonumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Monument
         fields = '__all__'

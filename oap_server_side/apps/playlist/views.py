@@ -81,7 +81,7 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         user = self.request.user
         playlist_type = serializer.validated_data.get('type')
         channel = serializer.validated_data.get('channel')
-        if not channel:
+        if not channel and playlist_type == Playlist.COLLECTION:
             raise PermissionDenied("Collections must be associated with a channel.")
 
         # Check if the user is the owner or editor of the channel before being able to create a collection for it
