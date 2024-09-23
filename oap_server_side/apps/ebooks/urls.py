@@ -6,7 +6,8 @@ from .views import (
     QuestionViewSet, 
     QuizSubmissionViewSet, 
     EbookInfoView, 
-    EbookSearchView
+    EbookSearchView,
+    ReadLaterViewSet
 )
 
 router = DefaultRouter()
@@ -14,6 +15,7 @@ router.register(r'ebooks', EbookViewSet, basename='ebook')
 router.register(r'quizzes', QuizViewSet, basename='quiz')
 router.register(r'questions', QuestionViewSet, basename='question')
 router.register(r'submissions', QuizSubmissionViewSet, basename='submission')
+router.register(r'read-later', ReadLaterViewSet, basename='read-later')
 
 urlpatterns = [
     path('ebooks/search/', EbookSearchView.as_view(), name='ebook-search'),
