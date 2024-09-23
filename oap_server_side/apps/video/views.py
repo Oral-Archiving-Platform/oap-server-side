@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status
 from .permissions import IsChannelMemberOrReadOnly
-from .models import Video, Transcript, VideoSegment, City, Participant, Monument
-from .serializers import VideoSerializer, TranscriptSerializer, VideoSegmentSerializer,ParticipantSerializer,VideoPageSerializer, MonumentSerializer, CitySerializer
+from .models import Video, Transcript, VideoSegment, City, Participant, Monument, Topic, ImportantPerson
+from .serializers import VideoSerializer, TranscriptSerializer, VideoSegmentSerializer,ParticipantSerializer,VideoPageSerializer, MonumentSerializer, CitySerializer,TopicSerializer,ImportantPersonSerializer
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from datetime import datetime
@@ -9,6 +9,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from ..media.services import create_media_with_category
 from django.db import transaction
 from .services import create_or_get_city, create_or_get_monument
+from .utils import create_or_get_important_person,create_or_get_topic
 
 
 class VideoPageViewSet(viewsets.ModelViewSet):
@@ -34,6 +35,9 @@ class VideoViewSet(viewsets.ModelViewSet):
                 media_data = video_data.get('mediaID')
                 city_data = video_data.get('city')
                 monument_data = video_data.get('monument')
+                topics_data = video_data.get('topics', []) 
+                important_persons_data = video_data.get('important_persons', [])
+
 
                 if city_data:
                     city, city_error = create_or_get_city(city_data)
@@ -58,12 +62,33 @@ class VideoViewSet(viewsets.ModelViewSet):
                     raise ValueError("Media creation failed", media_errors)
 
                 video_data['mediaID'] = media.id
+                
+                topic_objects = []
+                for topic_name in topics_data:
+                    topic, topic_error = create_or_get_topic(topic_name)
+                    if topic_error:
+                        raise ValueError("Topic creation/retrieval failed", topic_error)
+                    topic_objects.append(topic)
+
+                important_person_objects = []
+                for person_name in important_persons_data:
+                    person, person_error = create_or_get_important_person(person_name)
+                    if person_error:
+                        raise ValueError("Important person creation/retrieval failed", person_error)
+                    important_person_objects.append(person)
+
+                
                 video_serializer = VideoSerializer(data=video_data)
 
                 if not video_serializer.is_valid():
                     raise ValueError("Video data validation failed", video_serializer.errors)
 
                 video = video_serializer.save()
+                
+                video.topics.set(topic_objects)
+                video.important_persons.set(important_person_objects)
+
+                
                 participant_errors = []
 
                 for participant in participants:
@@ -494,3 +519,11 @@ class MonumentViewSet(viewsets.ModelViewSet):
 class CityViewSet(viewsets.ModelViewSet):
     queryset = City.objects.all()
     serializer_class = CitySerializer
+
+class TopicViewSet(viewsets.ModelViewSet):
+    queryset = Topic.objects.all()
+    serializer_class = TopicSerializer
+
+class ImportantPersonViewSet(viewsets.ModelViewSet):
+    queryset = ImportantPerson.objects.all()
+    serializer_class = ImportantPersonSerializer

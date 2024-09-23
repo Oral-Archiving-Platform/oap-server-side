@@ -3,10 +3,7 @@ from apps.users.models import User
 from apps.media.models import Media
 import datetime
 from django.core.exceptions import ValidationError
-from moviepy.editor import VideoFileClip
-import requests
-import tempfile
-from moviepy.editor import VideoFileClip
+from pytube import YouTube
 
 class City(models.Model):
     city_name = models.CharField(max_length=100)
@@ -21,6 +18,16 @@ class Monument(models.Model):
 
     def __str__(self):
         return self.monument_name
+class Topic(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+class ImportantPerson(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
 
 class Video(models.Model):
     PUB='1'
@@ -55,6 +62,8 @@ class Video(models.Model):
     duration = models.DurationField(null=True)
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True, related_name='videos')
     monument = models.ForeignKey(Monument, on_delete=models.SET_NULL, null=True, blank=True, related_name='videos')
+    topics = models.ManyToManyField(Topic, related_name='videos')  # Changed to ManyToManyField
+    important_persons = models.ManyToManyField(ImportantPerson, related_name='videos')  # Changed to ManyToManyField
 
     def __str__(self):
         return self.videoURL
@@ -63,6 +72,15 @@ class Video(models.Model):
             raise ValidationError("A video can only be linked to either a city or a monument, not both.")
         if not self.city and not self.monument:
             raise ValidationError("A video must be linked to either a city or a monument.")
+    def save(self, *args, **kwargs):
+        if not self.duration and self.videoURL:
+            try:
+                yt = YouTube(self.videoURL)
+                self.duration = datetime.timedelta(seconds=yt.length)  # Convert seconds to timedelta
+            except Exception as e:
+                raise ValidationError(f"Error fetching video duration: {e}")
+
+        super(Video, self).save(*args, **kwargs)
 
   
 

@@ -1,5 +1,6 @@
-from .models import City, Monument
+from .models import City, Monument, Topic, ImportantPerson
 from .serializers import CitySerializer, MonumentSerializer
+
 
 def create_or_get_city(city_data):
     if isinstance(city_data, int):
