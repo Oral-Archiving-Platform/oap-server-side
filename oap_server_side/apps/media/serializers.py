@@ -47,7 +47,7 @@ class RecursiveField(serializers.Serializer):
         return serializer.data
 
 class CommentSerializer(serializers.ModelSerializer):
-    
+    username = serializers.CharField(source='userID.username', read_only=True)
     replies = RecursiveField(many=True, required=False)
     firstName = serializers.SerializerMethodField()
     lastName = serializers.SerializerMethodField()
