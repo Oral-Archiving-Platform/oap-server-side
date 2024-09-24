@@ -1,13 +1,16 @@
 from rest_framework import viewsets, status
 from .permissions import IsChannelMemberOrReadOnly
-from .models import Video, Transcript, VideoSegment, Participant, Media
-from .serializers import VideoSerializer, TranscriptSerializer, VideoSegmentSerializer,ParticipantSerializer,VideoPageSerializer
+from .models import Video, Transcript, VideoSegment, City, Participant, Monument, Topic, ImportantPerson
+from .serializers import VideoSerializer, TranscriptSerializer, VideoSegmentSerializer,ParticipantSerializer,VideoPageSerializer, MonumentSerializer, CitySerializer,TopicSerializer,ImportantPersonSerializer
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from datetime import datetime
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from ..media.services import create_media_with_category
 from django.db import transaction
+from .services import create_or_get_city, create_or_get_monument
+from .utils import create_or_get_important_person,create_or_get_topic
+
 
 class VideoPageViewSet(viewsets.ModelViewSet):
     serializer_class = VideoPageSerializer
@@ -31,6 +34,27 @@ class VideoViewSet(viewsets.ModelViewSet):
                 video_data = request.data.get('video')
                 participants = request.data.get('participants')
                 media_data = video_data.get('mediaID')
+                city_data = video_data.get('city')
+                monument_data = video_data.get('monument')
+                topics_data = video_data.get('topics', []) 
+                important_persons_data = video_data.get('important_persons', [])
+
+
+                if city_data:
+                    city, city_error = create_or_get_city(city_data)
+                    if city_error:
+                        raise ValueError("City creation/retrieval failed", city_error)
+                    video_data['city'] = city.id
+                    video_data['monument'] = None
+                elif monument_data:
+                    monument, monument_error = create_or_get_monument(monument_data)
+                    if monument_error:
+                        raise ValueError("Monument creation/retrieval failed", monument_error)
+                    video_data['monument'] = monument.id
+                    video_data['city'] = None
+                else:
+                    raise ValueError("Either a city or monument must be provided.")
+
 
                 media_data['uploaderID'] = request.user.id
 
@@ -39,12 +63,33 @@ class VideoViewSet(viewsets.ModelViewSet):
                     raise ValueError("Media creation failed", media_errors)
 
                 video_data['mediaID'] = media.id
+                
+                topic_objects = []
+                for topic_name in topics_data:
+                    topic, topic_error = create_or_get_topic(topic_name)
+                    if topic_error:
+                        raise ValueError("Topic creation/retrieval failed", topic_error)
+                    topic_objects.append(topic)
+
+                important_person_objects = []
+                for person_name in important_persons_data:
+                    person, person_error = create_or_get_important_person(person_name)
+                    if person_error:
+                        raise ValueError("Important person creation/retrieval failed", person_error)
+                    important_person_objects.append(person)
+
+                
                 video_serializer = VideoSerializer(data=video_data)
 
                 if not video_serializer.is_valid():
                     raise ValueError("Video data validation failed", video_serializer.errors)
 
                 video = video_serializer.save()
+                
+                video.topics.set(topic_objects)
+                video.important_persons.set(important_person_objects)
+
+                
                 participant_errors = []
 
                 for participant in participants:
@@ -74,6 +119,62 @@ class VideoViewSet(viewsets.ModelViewSet):
         videos = self.queryset.filter(mediaID__channelID=channel_id)
         serializer = VideoSerializer(videos, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='videos-by-city/(?P<city_name>[^/.]+)')
+    def get_videos_by_city(self, request, city_name=None, *args, **kwargs):
+        if not city_name:
+            return Response({"error": "city_name parameter is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Fetch the city object
+            city = City.objects.get(city_name=city_name)
+
+            # Get videos either directly linked to the city or via monuments
+            videos = Video.objects.filter(city=city) | Video.objects.filter(monument__city=city)
+
+            # Prepare a list of video data
+            video_list = []
+            for video in videos:
+                video_data = {
+                    "title": video.mediaID.title,
+                    "interviewees": [f"{participant.firstName} {participant.lastName}" for participant in video.participants.filter(role=Participant.INTERVIEWEE)],
+                    "interviewers": [f"{participant.firstName} {participant.lastName}" for participant in video.participants.filter(role=Participant.INTERVIEWER)],
+                    "monument": video.monument.monument_name if video.monument else None,
+                    "monument_image": video.monument.monument_image.url if video.monument and video.monument.monument_image else None
+                }
+                video_list.append(video_data)
+
+            # Create the response object
+            response = {
+                "city_name": city.city_name,
+                "videos": video_list
+            }
+            return Response(response, status=status.HTTP_200_OK)
+
+        except City.DoesNotExist:
+            return Response({"error": "City not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='cities-with-videos')
+    def get_video_cities(self, request):
+        cities = City.objects.filter(videos__isnull=False).distinct() | City.objects.filter(monuments__videos__isnull=False).distinct()
+        
+        city_list = []
+
+        for city in cities:
+            monuments_with_videos = city.monuments.filter(videos__isnull=False).distinct()
+            monument_data = [{
+                "monument_name": monument.monument_name,
+                "monument_image": monument.monument_image.url if monument.monument_image else None
+            } for monument in monuments_with_videos]
+
+            city_list.append({
+                "city_name": city.city_name,
+                "city_image": city.city_image.url if city.city_image else None,
+                "monuments": monument_data
+            })
+
+        return Response({"cities": city_list}, status=status.HTTP_200_OK)
+
+
 
 class ParticipantViewSet(viewsets.ModelViewSet):
     queryset = Participant.objects.all()
@@ -127,6 +228,7 @@ class VideoSegmentViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def create_video_segment(self, request):
+        print("huh")
         try:
             video_id = request.data.get('video_id')
             video = Video.objects.get(pk=video_id)
@@ -221,8 +323,19 @@ class TranscriptViewSet(viewsets.ModelViewSet):
             return Response({"error": "Video not found"}, status=status.HTTP_404_NOT_FOUND)
 
         transcripts = Transcript.objects.filter(videoID=video)
-        serializer = TranscriptSerializer(transcripts, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        print("they got hrt",transcripts)
+
+        transcripts_by_language = {}
+
+        for transcript in transcripts:
+            language = transcript.transcriptionLanguage
+            
+            if language not in transcripts_by_language:
+                transcripts_by_language[language] = []
+
+            transcripts_by_language[language].append(TranscriptSerializer(transcript).data)
+
+        return Response(transcripts_by_language, status=status.HTTP_200_OK)
 
 class ComplexSegmentViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
@@ -406,3 +519,20 @@ class complexSegementViewSet(viewsets.ModelViewSet):
             segments_data.append(segment_data)
 
         return Response(segments_data, status=status.HTTP_200_OK)
+    
+
+class MonumentViewSet(viewsets.ModelViewSet):
+    queryset = Monument.objects.all()
+    serializer_class =MonumentSerializer
+
+class CityViewSet(viewsets.ModelViewSet):
+    queryset = City.objects.all()
+    serializer_class = CitySerializer
+
+class TopicViewSet(viewsets.ModelViewSet):
+    queryset = Topic.objects.all()
+    serializer_class = TopicSerializer
+
+class ImportantPersonViewSet(viewsets.ModelViewSet):
+    queryset = ImportantPerson.objects.all()
+    serializer_class = ImportantPersonSerializer
