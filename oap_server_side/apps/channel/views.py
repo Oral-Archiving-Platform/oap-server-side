@@ -10,6 +10,15 @@ from django.core.mail import send_mail
 from django.conf import settings
 import uuid
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
+from rest_framework import status
+from apps.media.models import Media
+from apps.video.models import Video
+from apps.channel.models import Channel
+from apps.video.serializers import VideoSerializer
 
 
 
@@ -18,7 +27,7 @@ class ChannelViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self): #get all channels of the usereven those where he is a member
         user = self.request.user
-        return Channel.objects.filter(channelmembership__userID=user).distinct()
+        return Channel.objects.all()
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -31,7 +40,32 @@ class ChannelViewSet(viewsets.ModelViewSet):
         subscriptions = Subscription.objects.filter(channelID=channel)
         serializer = SubscriptionSerializer(subscriptions, many=True)
         return Response(serializer.data)
-    
+class ChanneVideolViewSet(viewsets.ModelViewSet):
+    queryset = Channel.objects.all()
+    serializer_class = ChannelSerializer
+    permission_classes = [IsAuthenticated]  # Ensure user is authenticated
+
+    # Other existing methods...
+
+    @action(detail=True, methods=['get'], url_path='videos', permission_classes=[IsAuthenticated])
+    def channel_videos(self, request, pk=None):
+        """
+        List all videos that belong to a specific channel based on channel ID.
+        """
+        # Get the channel by ID (pk)
+        channel = get_object_or_404(Channel, id=pk)
+
+        # Get the media entries that belong to this channel
+        media_items = Media.objects.filter(channelID=channel)
+
+        # Filter the videos based on the media items
+        videos = Video.objects.filter(mediaID__in=media_items)
+
+        # Serialize the video data
+        serializer = VideoSerializer(videos, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+ 
 
 
 class ChannelMembershipViewSet(viewsets.ModelViewSet):

@@ -12,7 +12,6 @@ class Channel(models.Model):
 
     def __str__(self):
         return self.name
-
 class ChannelMembership(models.Model):
     EDITOR='1'
     OWNER='2'
