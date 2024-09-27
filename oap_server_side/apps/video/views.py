@@ -10,6 +10,7 @@ from ..media.services import create_media_with_category
 from django.db import transaction
 from .services import create_or_get_city, create_or_get_monument
 from .utils import create_or_get_important_person,create_or_get_topic
+from rest_framework.pagination import PageNumberPagination
 
 
 class VideoPageViewSet(viewsets.ModelViewSet):
@@ -111,14 +112,24 @@ class VideoViewSet(viewsets.ModelViewSet):
                     'error': str(e.args[0]),
                     'details': e.args[1]
                 }, status=status.HTTP_400_BAD_REQUEST)
+   
     @action(detail=False, methods=['get'])
     def get_channel_videos(self, request):
         channel_id = request.query_params.get('channel_id')
         if not channel_id:
             return Response({"error": "channel_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
         videos = self.queryset.filter(mediaID__channelID=channel_id)
-        serializer = VideoSerializer(videos, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        # Apply pagination
+        paginator = PageNumberPagination()
+        paginated_videos = paginator.paginate_queryset(videos, request)
+
+        serializer = VideoSerializer(paginated_videos, many=True)
+
+        # Return paginated response
+        return paginator.get_paginated_response(serializer.data)
+
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='videos-by-city/(?P<city_name>[^/.]+)')
     def get_videos_by_city(self, request, city_name=None, *args, **kwargs):
         if not city_name:
