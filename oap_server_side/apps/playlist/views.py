@@ -67,10 +67,11 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.is_authenticated:
             return Playlist.objects.filter(
-                Q(privacy_status=Playlist.PUBLIC) |
+                # Q(privacy_status=Playlist.PUBLIC) |
                 Q(created_by=user)
             )
-        return Playlist.objects.filter(privacy_status=Playlist.PUBLIC)
+        # return Playlist.objects.filter(privacy_status=Playlist.PUBLIC)
+        return None
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
