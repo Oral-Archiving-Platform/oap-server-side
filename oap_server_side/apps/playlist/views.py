@@ -65,13 +65,18 @@ class PlaylistViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        # Type constants based on the choices you defined
+        WATCHLATER = '2'
+        COLLECTION = '1'
+
         if user.is_authenticated:
+            # Fetch playlists created by the user, excluding 'Watch-later' and 'Collection'
             return Playlist.objects.filter(
-                # Q(privacy_status=Playlist.PUBLIC) |
-                Q(created_by=user)
+                Q(created_by=user) & ~Q(type=WATCHLATER) & ~Q(type=COLLECTION)
             )
-        # return Playlist.objects.filter(privacy_status=Playlist.PUBLIC)
-        return None
+        
+        # If the user is not authenticated, return an empty queryset or None based on your requirement
+        return Playlist.objects.none()  # Empty queryset if not authenticated
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
