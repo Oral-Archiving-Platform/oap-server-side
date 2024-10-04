@@ -61,6 +61,7 @@ class Media(models.Model):
             return self.like_set.filter(userID=user).exists()
         return False
 
+
 class View(models.Model):
     mediaID = models.ForeignKey(Media, on_delete=models.CASCADE)
     userID = models.ForeignKey(User, on_delete=models.CASCADE)
