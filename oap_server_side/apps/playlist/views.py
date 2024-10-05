@@ -194,17 +194,22 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         channel = get_object_or_404(Channel, id=channel_id)
         collections = Playlist.objects.filter(channel=channel, type=Playlist.COLLECTION)
         
-        if request.user.is_authenticated:  # Show even if something is private if the user is an editor or owner
+        if request.user.is_authenticated:
             collections = collections.filter(
                 Q(privacy_status=Playlist.PUBLIC) |
-                Q(channel__channelmembership__userID=request.user, 
+                Q(channel__channelmembership__userID=request.user,
                   channel__channelmembership__role__in=[ChannelMembership.EDITOR, ChannelMembership.OWNER])
-            ).distinct()  # distinct to avoid getting duplicates because of the or
-        else:  # Only show public collections
+            ).distinct()
+        else:
             collections = collections.filter(privacy_status=Playlist.PUBLIC)
-
+        
+        page = self.paginate_queryset(collections)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
         serializer = self.get_serializer(collections, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class PlaylistMediaViewSet(viewsets.ModelViewSet):
