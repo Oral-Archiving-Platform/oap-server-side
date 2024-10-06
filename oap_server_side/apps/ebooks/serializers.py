@@ -31,9 +31,27 @@ class QuestionSerializer(serializers.ModelSerializer):
         fields = ['id', 'quiz', 'question_text', 'type', 'correct_answer', 'options', 'correct_option']
 
     def validate(self, data):
-        if data['type'] == 'multiple_choice' and data.get('correct_answer'):
-            raise serializers.ValidationError("Multiple choice questions should not have a correct_answer directly.")
+        if data['type'] == 'multiple_choice':
+            if data.get('correct_answer'):
+                raise serializers.ValidationError("Multiple choice questions should not have a correct_answer directly.")
+            if not data.get('options'):
+                raise serializers.ValidationError("Multiple choice questions must have options.")
+            if not data.get('correct_option'):
+                raise serializers.ValidationError("Multiple choice questions must have a correct option.")
+            if data['correct_option'] not in data['options']:
+                raise serializers.ValidationError("The correct option must be one of the provided options.")
+        elif data['type'] == 'true_false':
+            if data.get('options'):
+                raise serializers.ValidationError("True/False questions should not have options.")
+            if not data.get('correct_answer'):
+                raise serializers.ValidationError("True/False questions must have a correct answer.")
+            if data['correct_answer'] not in ['True', 'False']:
+                raise serializers.ValidationError("The correct answer for a True/False question must be 'True' or 'False'.")
+            if data.get('correct_option'):
+                raise serializers.ValidationError("True/False questions should not have a correct_option.")
 
+        # Always return the validated data
+        return data
 
 class QuizSubmissionSerializer(serializers.ModelSerializer):
     class Meta:
