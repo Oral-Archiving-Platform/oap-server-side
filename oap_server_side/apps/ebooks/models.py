@@ -6,6 +6,7 @@ class Ebook(Media):
     file = models.FileField(upload_to='ebooks/')
     drm_protected = models.BooleanField(default=True)
     thumbnail = models.ImageField(upload_to='thumbnails/', null=True, blank=True)  # New field for the thumbnail
+    mediaID = models.ForeignKey(Media, on_delete=models.CASCADE,related_name='ebook_media')
 
     def __str__(self):
         return self.title
