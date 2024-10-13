@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Category, Media, Comment, View, Like,OriginalLanguage
-
-
+from apps.video.models import Video
+from apps.ebooks.models import Ebook
 class LikeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Like
@@ -13,15 +13,28 @@ class MediaSerializer(serializers.ModelSerializer):
     likes = serializers.SerializerMethodField()#add a new field to the serializer read-only ,calls a method on the serializer class it is attached to.
     views = serializers.SerializerMethodField()
     category_name = serializers.SerializerMethodField()  # Add this field
-
-
+    video_url = serializers.SerializerMethodField()
+    type = serializers.CharField(source='get_type_display', read_only=True)
+    # Ebook_thumbnail = serializers.SerializerMethodField()
     class Meta:
         model = Media
         fields = '__all__'
         read_only_fields = ['uploadDate']
 
+    def get_video_url(self, obj):
+        video = Video.objects.filter(mediaID=obj).first()
+        if video:
+            return video.videoURL
+        return None
+    
+    def get_type(self, obj):
+        if Video.objects.filter(mediaID=obj).exists():
+            return 'video'
+        elif Ebook.objects.filter(mediaID=obj).exists():
+            return 'ebook'
 
 
+    
     def get_likes(self, obj):
         return Like.objects.filter(mediaID=obj).count()
     
