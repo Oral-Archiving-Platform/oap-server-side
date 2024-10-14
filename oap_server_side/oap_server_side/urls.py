@@ -6,7 +6,7 @@ from django.conf.urls.static import static
 # Include paths for API endpoints and the admin site
 urlpatterns = [
     path('admin/', admin.site.urls),  # Admin panel URL
-    # path('accounts/', include('django.contrib.auth.urls')), 
+    path('accounts/', include('django.contrib.auth.urls')),  # Enable login/logout
 
     # API endpoints for various apps
     path('api/m/', include('apps.media.urls')),        # Media-related APIs
