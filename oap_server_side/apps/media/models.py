@@ -6,6 +6,21 @@ class Category(models.Model):
     name = models.CharField(max_length=100,unique=True)
     def __str__(self):
         return self.name
+class OriginalLanguage(models.Model):
+    language = models.CharField(max_length=100, unique=True)
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if not OriginalLanguage.objects.exists():
+            languages = [
+                'English',
+                'Arabic',
+                'French',
+                'Spanish',
+                'German'
+            ]
+            for lang in languages:
+                OriginalLanguage.objects.get_or_create(language=lang)
+
 
 class Media(models.Model):
     VIDEO='1'
@@ -31,12 +46,22 @@ class Media(models.Model):
         default=VIDEO,  
     )
     acknowledgement = models.TextField(default="")
-    originalLanguage = models.CharField(max_length=100)
+    originalLanguage = originalLanguage = models.ForeignKey(
+        OriginalLanguage,
+        on_delete=models.CASCADE,
+        related_name='media',
+        null=True,
+    )
+
 
     def __str__(self):
         return self.title
+    def is_liked_by_user(self, user):
+        if user.is_authenticated:
+            return self.like_set.filter(userID=user).exists()
+        return False
 
-    
+
 class View(models.Model):
     mediaID = models.ForeignKey(Media, on_delete=models.CASCADE)
     userID = models.ForeignKey(User, on_delete=models.CASCADE)

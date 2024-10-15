@@ -157,6 +157,7 @@ GRAPH_MODELS ={
 }
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -164,7 +165,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  
+     
     'django_otp.middleware.OTPMiddleware',
 ]
 
@@ -249,3 +250,14 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'oralarchivingplatform@gmail.com'  
+EMAIL_HOST_PASSWORD = 'kmtg hbre uqgg qpcl'  
+DEFAULT_FROM_EMAIL = 'OAP <oralarchivingplatform@gmail.com>'
+
+# Frontend URL for invitation links
+FRONTEND_URL = 'http://localhost:3000'  # Replace with your frontend URL

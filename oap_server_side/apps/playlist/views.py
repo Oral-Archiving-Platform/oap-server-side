@@ -65,12 +65,18 @@ class PlaylistViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        # Type constants based on the choices you defined
+        WATCHLATER = '2'
+        COLLECTION = '1'
+
         if user.is_authenticated:
+            # Fetch playlists created by the user, excluding 'Watch-later' and 'Collection'
             return Playlist.objects.filter(
-                Q(privacy_status=Playlist.PUBLIC) |
-                Q(created_by=user)
+                Q(created_by=user) & ~Q(type=WATCHLATER) & ~Q(type=COLLECTION)
             )
-        return Playlist.objects.filter(privacy_status=Playlist.PUBLIC)
+        
+        # If the user is not authenticated, return an empty queryset or None based on your requirement
+        return Playlist.objects.none()  # Empty queryset if not authenticated
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -80,12 +86,13 @@ class PlaylistViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         user = self.request.user
         playlist_type = serializer.validated_data.get('type')
-        channel = serializer.validated_data.get('channel')
-        if not channel:
-            raise PermissionDenied("Collections must be associated with a channel.")
+        channel = self.request.data.get('channel', None)
 
         # Check if the user is the owner or editor of the channel before being able to create a collection for it
         if playlist_type == Playlist.COLLECTION:
+            if not channel:
+                raise PermissionDenied("Collections must be associated with a channel.")
+
             is_channel_owner = ChannelMembership.objects.filter(
                 userID=self.request.user,
                 channelID=channel,
@@ -97,8 +104,11 @@ class PlaylistViewSet(viewsets.ModelViewSet):
 
         # Cannot create playlists of type watchlater
         if playlist_type == Playlist.WATCHLATER:
-            raise PermissionDenied("You already have a Watch Later playlist.")
-        
+            raise PermissionDenied("You already have a Watch Later playlist.")            
+
+            
+
+
         serializer.save(created_by=user)
 
     def perform_update(self, serializer):
@@ -133,7 +143,7 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         playlists = Playlist.objects.filter(created_by=user_b, privacy_status=Playlist.PUBLIC)
         serializer = PlaylistSerializer(playlists, many=True)
         return Response(serializer.data)
-
+    
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def user_media(self, request):
         user_id = request.query_params.get('user_id')
@@ -184,17 +194,22 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         channel = get_object_or_404(Channel, id=channel_id)
         collections = Playlist.objects.filter(channel=channel, type=Playlist.COLLECTION)
         
-        if request.user.is_authenticated:  # Show even if something is private if the user is an editor or owner
+        if request.user.is_authenticated:
             collections = collections.filter(
                 Q(privacy_status=Playlist.PUBLIC) |
-                Q(channel__channelmembership__userID=request.user, 
+                Q(channel__channelmembership__userID=request.user,
                   channel__channelmembership__role__in=[ChannelMembership.EDITOR, ChannelMembership.OWNER])
-            ).distinct()  # distinct to avoid getting duplicates because of the or
-        else:  # Only show public collections
+            ).distinct()
+        else:
             collections = collections.filter(privacy_status=Playlist.PUBLIC)
-
+        
+        page = self.paginate_queryset(collections)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
         serializer = self.get_serializer(collections, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class PlaylistMediaViewSet(viewsets.ModelViewSet):
@@ -275,4 +290,26 @@ class PlaylistMediaViewSet(viewsets.ModelViewSet):
         playlists = Playlist.objects.filter(created_by=user, privacy_status=Playlist.PUBLIC)
         media = PlaylistMedia.objects.filter(playlist__in=playlists)
         serializer = PlaylistMediaSerializer(media, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+   
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
+    def collection_media(self, request, pk=None):
+        """
+        Retrieve media within a specific collection (playlist of type COLLECTION).
+        Only requires the user to be authenticated.
+        """
+        try:
+            # Get the playlist (collection) by its primary key (ID) and ensure it's of type COLLECTION
+            collection = Playlist.objects.get(id=pk, type=Playlist.COLLECTION)
+        except Playlist.DoesNotExist:
+            return Response({"error": "Collection not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if the collection is public, or else deny access
+        if collection.privacy_status == Playlist.PRIVATE:
+            return Response({"error": "This collection is private."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Retrieve media associated with this collection
+        media_items = PlaylistMedia.objects.filter(playlist=collection)
+        serializer = PlaylistMediaSerializer(media_items, many=True)
+
         return Response(serializer.data, status=status.HTTP_200_OK)

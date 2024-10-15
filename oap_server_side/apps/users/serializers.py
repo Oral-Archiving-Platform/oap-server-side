@@ -12,7 +12,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['last_name'] = user.last_name
         token['email'] = user.email
         token['id'] = user.id
-        token['role'] = user.role
+        # token['role'] = user.role
         return token
     
 class UserSerializer(serializers.ModelSerializer):
@@ -30,7 +30,7 @@ class UserSerializer(serializers.ModelSerializer):
             email=validated_data['email'],
             first_name=validated_data.get('first_name'),
             last_name=validated_data.get('last_name'),
-            role=validated_data.get('role')
+            # role=validated_data.get('role')
         )
         user.set_password(validated_data['password'])
         user.save()

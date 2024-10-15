@@ -1,8 +1,8 @@
 from .permissions import IsChannelMemberOrReadOnly
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from .models import Category, Media, Comment, View, Like
-from .serializers import CategorySerializer, MediaSerializer, CommentSerializer, ViewSerializer, LikeSerializer
+from .models import Category, Media, Comment, View, Like,OriginalLanguage
+from .serializers import CategorySerializer,OriginalLanguageSerializer, MediaSerializer, CommentSerializer, ViewSerializer, LikeSerializer
 from .services import create_media_with_category
 from django.db import transaction
 from ..video.models import Video
@@ -11,10 +11,17 @@ from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from .models import View
 from django.db.models import Q
+from datetime import timedelta
+from django.utils import timezone
+from rest_framework.exceptions import ValidationError
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    
+class LanguageViewSet(viewsets.ModelViewSet):
+    queryset = OriginalLanguage.objects.all()
+    serializer_class = OriginalLanguageSerializer
 
 class MediaViewSet(viewsets.ModelViewSet):
     permission_classes = [ IsChannelMemberOrReadOnly]
@@ -56,8 +63,46 @@ class ViewViewSet(viewsets.ModelViewSet):
     queryset = View.objects.all()
     serializer_class = ViewSerializer
 
+    @transaction.atomic
     def perform_create(self, serializer):
-        serializer.save(userID=self.request.user)
+        media_id = self.request.data.get('mediaID')
+        user = self.request.user
+
+        # Get the current time
+        now = timezone.now()
+
+        # Calculate one hour ago
+        one_hour_ago = now - timedelta(hours=1)
+
+        # Lock the rows to prevent simultaneous requests
+        with transaction.atomic():
+            # Select rows for this user and media that are within the last hour
+            existing_view = View.objects.select_for_update().filter(
+                mediaID=media_id,
+                userID=user,
+                viewDate__gte=one_hour_ago
+            ).exists()
+
+            if not existing_view:
+                # Validate and save if no view exists in the past hour
+                serializer.is_valid(raise_exception=True)
+                serializer.save(userID=user)
+            else:
+                # Raise a ValidationError indicating that the view was not added due to the limit
+                raise ValidationError(
+                    {"detail": "You have already viewed this media in the past hour."}
+                )
+
+    def create(self, request, *args, **kwargs):
+        # Override the create method to ensure the custom perform_create is used
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # Use perform_create method
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 class LikeViewSet(viewsets.ModelViewSet):
     queryset = Like.objects.all()

@@ -12,7 +12,6 @@ class Channel(models.Model):
 
     def __str__(self):
         return self.name
-
 class ChannelMembership(models.Model):
     EDITOR='1'
     OWNER='2'
@@ -31,7 +30,8 @@ class ChannelMembership(models.Model):
         unique_together = ('channelID', 'userID')
 
     def __str__(self):
-        return self.role
+        return f"{self.userID.email} - {self.get_role_display()} of {self.channelID.name}"
+
     
 class Subscription(models.Model):
     channelID = models.ForeignKey(Channel, on_delete=models.CASCADE)
@@ -40,3 +40,16 @@ class Subscription(models.Model):
 
     def __str__(self):
         return "Subscription"
+    
+
+class CollaborationInvitation(models.Model):
+    channel = models.ForeignKey(Channel, on_delete=models.CASCADE)
+    inviter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_invitations')
+    invitee_email = models.EmailField()
+    role = models.CharField(max_length=50, choices=ChannelMembership.ROLE_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    token = models.CharField(max_length=100, unique=True)
+    is_accepted = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Invitation for {self.invitee_email} to {self.channel.name}"
