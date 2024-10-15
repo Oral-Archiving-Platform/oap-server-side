@@ -1,6 +1,6 @@
 from rest_framework import permissions
 from apps.channel.models import ChannelMembership
-
+import json
 #i dont believe e need this anymore because all videos belong to a channel
 """"class IsVideoOwnerOrReadOnly(permissions.BasePermission):
 
@@ -18,7 +18,8 @@ class IsChannelMemberOrReadOnly(permissions.BasePermission):
         # For create operations
         if request.method == 'POST':
             print(request.data)
-            channel_id = request.data['video']['mediaID']['channelID']
+            video_data = json.loads(request.data.get('video', '{}'))
+            channel_id = video_data.get('mediaID', {}).get('channelID')
             print("POST permission",channel_id)
             if not channel_id:
                 print("POST permissio no channel")
@@ -31,9 +32,9 @@ class IsChannelMemberOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             print("safe meth object permission")
             return True
-        
-        return self.check_channel_membership(request.user, request.data['video']['mediaID']['channelID'], 
-                                             require_owner=request.method == 'DELETE')
+        video_data = json.loads(request.data.get('video', '{}'))
+        channel_id = video_data.get('mediaID', {}).get('channelID')
+        return self.check_channel_membership(request.user, channel_id, require_owner=request.method == 'DELETE')
 
     def check_channel_membership(self, user, channel_id, require_owner=False):
         print("check channel membership",channel_id)

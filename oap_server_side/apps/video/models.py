@@ -96,7 +96,7 @@ class VideoSegment(models.Model):
     
 class Transcript(models.Model):
     videoID= models.ForeignKey(Video, on_delete=models.CASCADE)
-    videoSegmentID = models.ForeignKey(VideoSegment, on_delete=models.CASCADE, default=None)
+    videoSegmentID = models.ForeignKey(VideoSegment, on_delete=models.CASCADE, default=None,blank=True, null=True)
     title = models.CharField(max_length=100)
     content = models.TextField()
     transcriberID = models.ForeignKey(User, on_delete=models.CASCADE)
