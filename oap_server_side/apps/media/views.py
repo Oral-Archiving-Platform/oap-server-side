@@ -156,23 +156,36 @@ class UserActivityViewSet(viewsets.ViewSet):
                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    @action(detail=False, methods=['get'], url_path='search')
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='search')
     def search_media(self, request):
-        # Get the search query from request parameters
+        # Get the search query and media type from request parameters
         query = request.query_params.get('q', '')
+        media_type = request.query_params.get('type', '')
+
+        # Map the string type to the numeric value
+        type_mapping = {
+            'Video': 1,
+            'Ebook': 4
+        }
 
         if query:
-            # Filter media based on literal matching of title or description
+            # Filter media based on title, description, and type if provided
             media_results = Media.objects.filter(
                 Q(title__icontains=query) | Q(description__icontains=query)
             )
-            
+
+            if media_type:
+                numeric_type = type_mapping.get(media_type)
+                if numeric_type is not None:
+                    media_results = media_results.filter(type=numeric_type)
+
             if media_results.exists():
-                    # Serialize the results using MediaSerializer
-                    serializer = MediaSerializer(media_results, many=True)
-                    return Response(serializer.data, status=status.HTTP_200_OK)
+                # Serialize the results using MediaSerializer
+                serializer = MediaSerializer(media_results, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
             else:
-                    # Return message if no media was found
+                # Return message if no media was found
                 return Response({"detail": "No media found matching the search query."}, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response({"detail": "No search query provided."}, status=status.HTTP_400_BAD_REQUEST)
+
