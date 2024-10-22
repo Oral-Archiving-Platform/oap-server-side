@@ -33,6 +33,7 @@ class VideoViewSet(viewsets.ModelViewSet):
     def create_complex_video(self, request, *args, **kwargs):
         with transaction.atomic(): 
             try:
+                print("before try",request.data)
                 video_data = json.loads(request.data.get('video', '{}'))
                 participants = json.loads(request.data.get('participants', '[]'))
                 transcript_data = json.loads(request.data.get('transcript', '{}'))
@@ -113,8 +114,10 @@ class VideoViewSet(viewsets.ModelViewSet):
                 if participant_errors:
                     raise ValueError("Participant data validation failed", participant_errors) 
                 segn=0
+                print("before seg")
                 for segment_data in segments_with_transcripts:
                     # Create segment
+                    print("before seg loop",segment_data)
                     segment_data['videoSegmentID'] = segn
                     segment_data['VideoID'] = video.id
                     segment_serializer = VideoSegmentSerializer(data=segment_data)
@@ -123,20 +126,27 @@ class VideoViewSet(viewsets.ModelViewSet):
                         segn+=1
                     else:
                         raise ValueError("Segment data validation failed", segment_serializer.errors)
-
+                    print("wst loop")
                     # Create transcript for segment
-                    transcript_data = segment_data.get('transcript', {})
-                    transcript_data.update({
-                        'videoID': video.id,
-                        'videoSegmentID': segment.id,
-                    })
-                    transcript_serializer = TranscriptSerializer(data=transcript_data)
-                    if transcript_serializer.is_valid():
-                        transcript_serializer.save()
-                    else:
-                        raise ValueError("Transcript data validation failed", transcript_serializer.errors)
+                    transcriptseg__data = segment_data.get('transcript', [])
+                    print("adter data",transcriptseg__data)
+                    if transcriptseg__data:
+                        transcription = transcriptseg__data.get('transcription', '')
+                        transcription_language = transcriptseg__data.get('transcriptionLanguage', '')
+                        
+                        # Check if both fields are filled
+                        if transcription and transcription_language:
+                            transcriptseg__data.update({
+                                'videoID': video.id,
+                                'videoSegmentID': segment.id,
+                            })
+                            transcript_serializer = TranscriptSerializer(data=transcriptseg__data)
+                            if transcript_serializer.is_valid():
+                                transcript_serializer.save()
+                            else:
+                                raise ValueError("Transcript data validation failed", transcript_serializer.errors)
 
-
+                print("after seg")
                 if transcript_data.get('transcription'):
                     transcript_data['videoID'] = video.id
                     transcript_data['videoSegmentID'] = None
