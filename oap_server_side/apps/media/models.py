@@ -39,7 +39,7 @@ class Media(models.Model):
     channelID = models.ForeignKey(Channel, on_delete=models.CASCADE)
     description = models.TextField()
     uploadDate = models.DateTimeField(auto_now_add=True)
-    categoryID = models.ForeignKey(Category, on_delete=models.CASCADE)
+    categoryID = models.ForeignKey(Category, on_delete=models.CASCADE, null=True)
     type=models.CharField(
         max_length=50,
         choices=TYPE_CHOICES,

@@ -78,9 +78,14 @@ class Video(models.Model):
                 yt = YouTube(self.videoURL)
                 self.duration = datetime.timedelta(seconds=yt.length)  # Convert seconds to timedelta
             except Exception as e:
-                raise ValidationError(f"Error fetching video duration: {e}")
-
+                # raise ValidationError(f"Error fetching video duration: {e}")
+                print(f"Error fetching video duration: {e}")
         super(Video, self).save(*args, **kwargs)
+        if not self.mediaID or self.mediaID.id != self.id:
+            media_instance = Media.objects.create(id=self.id)  # Create or fetch the related media instance
+            self.mediaID = media_instance
+            super(Video, self).save(*args, **kwargs)  # Save again to persist the mediaID update
+
 
   
 
