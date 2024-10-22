@@ -72,15 +72,7 @@ class Video(models.Model):
             raise ValidationError("A video can only be linked to either a city or a monument, not both.")
         if not self.city and not self.monument:
             raise ValidationError("A video must be linked to either a city or a monument.")
-    def save(self, *args, **kwargs):
-        if not self.duration and self.videoURL:
-            try:
-                yt = YouTube(self.videoURL)
-                self.duration = datetime.timedelta(seconds=yt.length)  # Convert seconds to timedelta
-            except Exception as e:
-                raise ValidationError(f"Error fetching video duration: {e}")
-
-        super(Video, self).save(*args, **kwargs)
+    
 
   
 
@@ -97,10 +89,6 @@ class VideoSegment(models.Model):
 class Transcript(models.Model):
     videoID= models.ForeignKey(Video, on_delete=models.CASCADE)
     videoSegmentID = models.ForeignKey(VideoSegment, on_delete=models.CASCADE, default=None,blank=True, null=True)
-    title = models.CharField(max_length=100)
-    content = models.TextField()
-    transcriberID = models.ForeignKey(User, on_delete=models.CASCADE)
-    transcriptDate = models.DateTimeField()
     transcription= models.TextField()
     transcriptionLanguage = models.CharField(max_length=100)
 

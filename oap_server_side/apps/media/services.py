@@ -4,7 +4,6 @@ from .models import Category, Media,OriginalLanguage
 from .serializers import CategorySerializer, MediaSerializer
 
 def create_media_with_category(media_data, category_data=None):
-    # Get or create category
     if isinstance(category_data, dict):
         category_name = category_data.get('name')
         print("Category Name:", category_name)

@@ -129,8 +129,6 @@ class VideoViewSet(viewsets.ModelViewSet):
                     transcript_data.update({
                         'videoID': video.id,
                         'videoSegmentID': segment.id,
-                        'transcriberID': request.user.id,
-                        'transcriptDate': datetime.now()
                     })
                     transcript_serializer = TranscriptSerializer(data=transcript_data)
                     if transcript_serializer.is_valid():
@@ -139,10 +137,9 @@ class VideoViewSet(viewsets.ModelViewSet):
                         raise ValueError("Transcript data validation failed", transcript_serializer.errors)
 
 
-                if transcript_data:
+                if transcript_data.get('transcription'):
                     transcript_data['videoID'] = video.id
                     transcript_data['videoSegmentID'] = None
-                    transcript_data['transcriberID'] = request.user.id
                     full_transcript_serializer = TranscriptSerializer(data=transcript_data)
                     if full_transcript_serializer.is_valid():
                         full_transcript_serializer.save()
