@@ -46,7 +46,7 @@ class Media(models.Model):
         default=VIDEO,  
     )
     acknowledgement = models.TextField(default="")
-    originalLanguage = originalLanguage = models.ForeignKey(
+    originalLanguage = models.ForeignKey(
         OriginalLanguage,
         on_delete=models.CASCADE,
         related_name='media',

@@ -1,6 +1,6 @@
 from django.db import models
 from apps.users.models import User
-from apps.media.models import Media
+from apps.media.models import Media,OriginalLanguage
 import datetime
 from django.core.exceptions import ValidationError
 from pytube import YouTube
@@ -99,13 +99,9 @@ class VideoSegment(models.Model):
     
 class Transcript(models.Model):
     videoID= models.ForeignKey(Video, on_delete=models.CASCADE)
-    videoSegmentID = models.ForeignKey(VideoSegment, on_delete=models.CASCADE, default=None)
-    title = models.CharField(max_length=100)
-    content = models.TextField()
-    transcriberID = models.ForeignKey(User, on_delete=models.CASCADE)
-    transcriptDate = models.DateTimeField()
+    videoSegmentID = models.ForeignKey(VideoSegment, on_delete=models.CASCADE, default=None,blank=True, null=True)
     transcription= models.TextField()
-    transcriptionLanguage = models.CharField(max_length=100)
+    transcriptionLanguage = models.ForeignKey(OriginalLanguage, on_delete=models.CASCADE, related_name='transcripts')
 
     def __str__(self):
         return self.title
@@ -121,7 +117,7 @@ class Participant(models.Model):
         (INTERVIEWEE, 'Interviewee'),
         ]
 
-    VideoId = models.ForeignKey('Video', on_delete=models.CASCADE, related_name='participants') 
+    VideoId = models.ForeignKey('Video', on_delete=models.CASCADE, related_name='participants_set') 
     firstName = models.CharField(max_length=255)  
     lastName = models.CharField(max_length=255, blank=True, null=True)  
     phoneNumber = models.CharField(max_length=20, blank=True, null=True)  
