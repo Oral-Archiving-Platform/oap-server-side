@@ -17,9 +17,12 @@ class ImportantPersonField(serializers.Field):
     def to_internal_value(self, data):
         return [create_or_get_important_person(name)[0] for name in data]
 class TranscriptSerializer(serializers.ModelSerializer):
+    transcriptionLanguage = serializers.CharField(source='transcriptionLanguage.language', read_only=True)
+
     class Meta:
         model = Transcript
         fields = '__all__'
+        
 class CitySerializer(serializers.ModelSerializer):
     class Meta:
         model = City
