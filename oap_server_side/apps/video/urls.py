@@ -1,4 +1,4 @@
-from .views import VideoViewSet, TranscriptViewSet, VideoSegmentViewSet, ParticipantViewSet, ComplexSegmentViewSet, complexSegementViewSet,TopicViewSet,ImportantPersonViewSet
+from .views import VideoViewSet, TranscriptViewSet, VideoSegmentViewSet, ParticipantViewSet, ComplexSegmentViewSet, complexSegementViewSet,TopicViewSet,ImportantPersonViewSet,CityViewSet,MonumentViewSet
 from rest_framework.routers import DefaultRouter
 from django.urls import path, include
 
@@ -10,6 +10,8 @@ router.register(r'participant', ParticipantViewSet, basename='participant')
 router.register(r'combined', complexSegementViewSet, basename='combined')
 router.register(r'topic', TopicViewSet, basename='topic')
 router.register(r'important_person', ImportantPersonViewSet, basename='important_person')
+router.register(r'city', CityViewSet, basename='city')
+router.register(r'monument', MonumentViewSet, basename='monument')
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -12,6 +12,7 @@ from .services import create_or_get_city, create_or_get_monument
 from .utils import create_or_get_important_person,create_or_get_topic
 from rest_framework.pagination import PageNumberPagination
 
+import json
 
 class VideoPageViewSet(viewsets.ModelViewSet):
     serializer_class = VideoPageSerializer
@@ -32,22 +33,30 @@ class VideoViewSet(viewsets.ModelViewSet):
     def create_complex_video(self, request, *args, **kwargs):
         with transaction.atomic(): 
             try:
-                video_data = request.data.get('video')
-                participants = request.data.get('participants')
-                media_data = video_data.get('mediaID')
+                print("before try",request.data)
+                video_data = json.loads(request.data.get('video', '{}'))
+                participants = json.loads(request.data.get('participants', '[]'))
+                transcript_data = json.loads(request.data.get('transcript', '{}'))
+                segments_with_transcripts = json.loads(request.data.get('segments', '[]'))
+                
+                media_data = video_data.get('mediaID', {})
                 city_data = video_data.get('city')
                 monument_data = video_data.get('monument')
                 topics_data = video_data.get('topics', []) 
                 important_persons_data = video_data.get('important_persons', [])
+                monument_image = request.FILES.get('monument_image')
+                city_image = request.FILES.get('city_image')
 
 
                 if city_data:
+                    city_data['city_image']=city_image
                     city, city_error = create_or_get_city(city_data)
                     if city_error:
                         raise ValueError("City creation/retrieval failed", city_error)
                     video_data['city'] = city.id
                     video_data['monument'] = None
                 elif monument_data:
+                    monument_data['monument_image']=monument_image
                     monument, monument_error = create_or_get_monument(monument_data)
                     if monument_error:
                         raise ValueError("Monument creation/retrieval failed", monument_error)
@@ -103,15 +112,57 @@ class VideoViewSet(viewsets.ModelViewSet):
                         participant_errors.append(participant_serializer.errors)
 
                 if participant_errors:
-                    raise ValueError("Participant data validation failed", participant_errors)                   
+                    raise ValueError("Participant data validation failed", participant_errors) 
+                segn=0
+                print("before seg")
+                for segment_data in segments_with_transcripts:
+                    # Create segment
+                    print("before seg loop",segment_data)
+                    segment_data['videoSegmentID'] = segn
+                    segment_data['VideoID'] = video.id
+                    segment_serializer = VideoSegmentSerializer(data=segment_data)
+                    if segment_serializer.is_valid():
+                        segment = segment_serializer.save()
+                        segn+=1
+                    else:
+                        raise ValueError("Segment data validation failed", segment_serializer.errors)
+                    print("wst loop")
+                    # Create transcript for segment
+                    transcriptseg__data = segment_data.get('transcript', [])
+                    print("adter data",transcriptseg__data)
+                    if transcriptseg__data:
+                        transcription = transcriptseg__data.get('transcription', '')
+                        transcription_language = transcriptseg__data.get('transcriptionLanguage', '')
+                        
+                        # Check if both fields are filled
+                        if transcription and transcription_language:
+                            transcriptseg__data.update({
+                                'videoID': video.id,
+                                'videoSegmentID': segment.id,
+                            })
+                            transcript_serializer = TranscriptSerializer(data=transcriptseg__data)
+                            if transcript_serializer.is_valid():
+                                transcript_serializer.save()
+                            else:
+                                raise ValueError("Transcript data validation failed", transcript_serializer.errors)
+
+                print("after seg")
+                if transcript_data.get('transcription'):
+                    transcript_data['videoID'] = video.id
+                    transcript_data['videoSegmentID'] = None
+                    full_transcript_serializer = TranscriptSerializer(data=transcript_data)
+                    if full_transcript_serializer.is_valid():
+                        full_transcript_serializer.save()
+                    else:
+                        raise ValueError("Transcript data validation failed", full_transcript_serializer.errors)
+
 
                 return Response(video_serializer.data, status=status.HTTP_201_CREATED)
+            
+
             except ValueError as e:
                 transaction.set_rollback(True)
-                return Response({
-                    'error': str(e.args[0]),
-                    'details': e.args[1]
-                }, status=status.HTTP_400_BAD_REQUEST)
+                return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
    
     @action(detail=False, methods=['get'])
     def get_channel_videos(self, request):

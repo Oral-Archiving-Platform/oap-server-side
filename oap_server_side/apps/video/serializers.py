@@ -16,12 +16,55 @@ class ImportantPersonField(serializers.Field):
 
     def to_internal_value(self, data):
         return [create_or_get_important_person(name)[0] for name in data]
+class TranscriptSerializer(serializers.ModelSerializer):
+    transcriptionLanguage = serializers.CharField(source='transcriptionLanguage.language', read_only=True)
+
+    class Meta:
+        model = Transcript
+        fields = '__all__'
+        
+class CitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = City
+        fields = '__all__'
+
+class MonumentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Monument
+        fields = '__all__'
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        
+        if instance.city:
+            representation['city'] = CitySerializer(instance.city).data
+        
+        return representation
+
+
+class TopicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Topic
+        fields = '__all__'
+class ImportantPersonSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ImportantPerson
+        fields = '__all__'
+class ParticipantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Participant
+        fields = '__all__'
 
 class VideoSerializer(serializers.ModelSerializer):
     media_details = MediaSerializer(source='mediaID', read_only=True)
     is_liked_by_user = serializers.SerializerMethodField()
     topics = TopicField()
     important_persons = ImportantPersonField()
+    transcripts = TranscriptSerializer(source='transcript_set', many=True, read_only=True)
+    city= CitySerializer(read_only=True)
+    monument = MonumentSerializer(read_only=True)
+    participants = ParticipantSerializer(source='participants_set', many=True, read_only=True)
 
     class Meta:
         model = Video
@@ -56,36 +99,11 @@ class VideoPageSerializer(serializers.ModelSerializer):
         representation['media_details'] = media_representation
         return representation
     
-class ParticipantSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Participant
-        fields = '__all__'
 
-class TranscriptSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Transcript
-        fields = '__all__'
+
 
 class VideoSegmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = VideoSegment
         fields = '__all__'
 
-class CitySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = City
-        fields = '__all__'
-
-class MonumentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Monument
-        fields = '__all__'
-
-class TopicSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Topic
-        fields = '__all__'
-class ImportantPersonSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ImportantPerson
-        fields = '__all__'

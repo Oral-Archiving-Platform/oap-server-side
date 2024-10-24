@@ -30,13 +30,14 @@ def create_or_get_monument(monument_data):
     
     elif isinstance(monument_data, dict):
         city_data = monument_data.get('city')
-
+        print("hoh city data")
         if not city_data:
             return None, "A city must be provided for the monument."
 
         city, city_error = create_or_get_city(city_data)
         if city_error:
             return None, city_error
+        print("cyrr")
         monument_data["city"] = city.id
         serializer = MonumentSerializer(data=monument_data)
         if serializer.is_valid():
