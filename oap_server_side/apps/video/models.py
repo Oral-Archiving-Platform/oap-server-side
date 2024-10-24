@@ -84,12 +84,8 @@ class Video(models.Model):
         if not self.id and self.mediaID_id:
             self.id = self.mediaID_id
         super().save(*args, **kwargs)
-<<<<<<< HEAD
-        
-=======
 
     
->>>>>>> videoform
 
   
 
