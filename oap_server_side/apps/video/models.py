@@ -64,6 +64,7 @@ class Video(models.Model):
     monument = models.ForeignKey(Monument, on_delete=models.SET_NULL, null=True, blank=True, related_name='videos')
     topics = models.ManyToManyField(Topic, related_name='videos')  # Changed to ManyToManyField
     important_persons = models.ManyToManyField(ImportantPerson, related_name='videos')  # Changed to ManyToManyField
+    fullTranscript = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.videoURL
@@ -83,13 +84,19 @@ class Video(models.Model):
         if not self.id and self.mediaID_id:
             self.id = self.mediaID_id
         super().save(*args, **kwargs)
+<<<<<<< HEAD
         
+=======
+
+    
+>>>>>>> videoform
 
   
 
 class VideoSegment(models.Model):
     VideoID = models.ForeignKey(Video, on_delete=models.CASCADE)
     segmentNumber = models.IntegerField()
+    title = models.CharField(max_length=255, blank=True, null=True)
     startTime = models.DurationField()
     endTime = models.DurationField()
     description = models.TextField() 
