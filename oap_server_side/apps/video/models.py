@@ -64,6 +64,7 @@ class Video(models.Model):
     monument = models.ForeignKey(Monument, on_delete=models.SET_NULL, null=True, blank=True, related_name='videos')
     topics = models.ManyToManyField(Topic, related_name='videos')  # Changed to ManyToManyField
     important_persons = models.ManyToManyField(ImportantPerson, related_name='videos')  # Changed to ManyToManyField
+    fullTranscript = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.videoURL
@@ -72,6 +73,18 @@ class Video(models.Model):
             raise ValidationError("A video can only be linked to either a city or a monument, not both.")
         if not self.city and not self.monument:
             raise ValidationError("A video must be linked to either a city or a monument.")
+    def save(self, *args, **kwargs):
+        if not self.duration and self.videoURL:
+            try:
+                yt = YouTube(self.videoURL)
+                self.duration = datetime.timedelta(seconds=yt.length)  # Convert seconds to timedelta
+            except Exception as e:
+                # raise ValidationError(f"Error fetching video duration: {e}")
+                print(f"Error fetching video duration: {e}")
+        if not self.id and self.mediaID_id:
+            self.id = self.mediaID_id
+        super().save(*args, **kwargs)
+
     
 
   
@@ -79,6 +92,7 @@ class Video(models.Model):
 class VideoSegment(models.Model):
     VideoID = models.ForeignKey(Video, on_delete=models.CASCADE)
     segmentNumber = models.IntegerField()
+    title = models.CharField(max_length=255, blank=True, null=True)
     startTime = models.DurationField()
     endTime = models.DurationField()
     description = models.TextField() 
