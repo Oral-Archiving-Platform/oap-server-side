@@ -11,7 +11,7 @@ from django.db import transaction
 from .services import create_or_get_city, create_or_get_monument
 from .utils import create_or_get_important_person,create_or_get_topic
 from rest_framework.pagination import PageNumberPagination
-
+from ..playlist.models import Playlist, PlaylistMedia
 import json
 
 class VideoPageViewSet(viewsets.ModelViewSet):
@@ -40,13 +40,13 @@ class VideoViewSet(viewsets.ModelViewSet):
                 segments_with_transcripts = json.loads(request.data.get('segments', '[]'))
                 
                 media_data = video_data.get('mediaID', {})
-                city_data = video_data.get('city')
-                monument_data = video_data.get('monument')
+                city_data = video_data.get('city',{})
+                monument_data = video_data.get('monument',{})
                 topics_data = video_data.get('topics', []) 
                 important_persons_data = video_data.get('important_persons', [])
                 monument_image = request.FILES.get('monument_image')
                 city_image = request.FILES.get('city_image')
-
+                playlist_id = request.data.get('playlist','')  
 
                 if city_data:
                     city_data['city_image']=city_image
@@ -156,6 +156,17 @@ class VideoViewSet(viewsets.ModelViewSet):
                     else:
                         raise ValueError("Transcript data validation failed", full_transcript_serializer.errors)
 
+                if playlist_id:
+                    try:
+                        playlist = Playlist.objects.get(id=playlist_id)
+
+                        PlaylistMedia.objects.create(
+                            playlist=playlist,
+                            media=media,
+                            added_by=request.user
+                        )                    
+                    except Playlist.DoesNotExist:
+                        raise ValueError("Specified playlist does not exist")
 
                 return Response(video_serializer.data, status=status.HTTP_201_CREATED)
             
