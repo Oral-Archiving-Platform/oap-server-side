@@ -106,9 +106,19 @@ class EbookViewSet(viewsets.ModelViewSet):
     serializer_class = EbookSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    def get_queryset(self):
+        return Ebook.objects.all()
+
     def perform_create(self, serializer):
         serializer.save(uploaderID=self.request.user)
-    
+
+    @action(detail=False, methods=['get'], url_path='mybooks', url_name='mybooks', permission_classes=[permissions.IsAuthenticated])
+    def mybooks(self, request):
+        queryset = Ebook.objects.filter(uploaderID=request.user)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'results': serializer.data
+        })
 
     @action(detail=True, methods=['get', 'post'], permission_classes=[permissions.IsAuthenticated])
     def comments(self, request, pk=None):
