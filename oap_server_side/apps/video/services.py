@@ -16,6 +16,7 @@ def create_or_get_city(city_data):
             city=serializer.save()
             return city, None
         else:
+            print("hh",serializer.errors)
             return None, serializer.errors
     return None, "Invalid city data format."
 
@@ -36,6 +37,7 @@ def create_or_get_monument(monument_data):
 
         city, city_error = create_or_get_city(city_data)
         if city_error:
+            print("err",city_error)
             return None, city_error
         print("cyrr")
         monument_data["city"] = city.id
@@ -44,6 +46,7 @@ def create_or_get_monument(monument_data):
             monument = serializer.save()
             return monument, None
         else:
+            print("p",serializer.errors)
             return None, serializer.errors
     else:
         return None, "Invalid monument data format."

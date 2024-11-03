@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Video, Transcript, VideoSegment,Participant,City, Monument,Topic,ImportantPerson
 from ..media.serializers import MediaSerializer
 from .utils import create_or_get_topic, create_or_get_important_person
+from ..playlist.models import *
 
 class TopicField(serializers.Field):
     def to_representation(self, value):
@@ -62,6 +63,7 @@ class VideoSerializer(serializers.ModelSerializer):
     city= CitySerializer(read_only=True)
     monument = MonumentSerializer(read_only=True)
     participants = ParticipantSerializer(source='participants_set', many=True, read_only=True)
+    collection_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Video
@@ -71,7 +73,22 @@ class VideoSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         media_representation = MediaSerializer(instance.mediaID).data
         representation['media_details'] = media_representation
+        print("Monument in representation:", representation.get("monument"))
+        if not representation.get("monument") and instance.monument:
+            # If monument is not present in the representation but exists in instance, add it manually
+            representation["monument"] = MonumentSerializer(instance.monument).data
+
         return representation
+    
+    def get_collection_name(self, obj):
+        # Get the collection name if it exists
+        try:
+            playlist_media = PlaylistMedia.objects.filter(media=obj.mediaID).first()
+            if playlist_media and playlist_media.playlist.type == '1':  # Check if it's a collection type
+                return playlist_media.playlist.name
+        except PlaylistMedia.DoesNotExist:
+            return None
+        return None
 
     def get_is_liked_by_user(self, obj):
         request = self.context.get('request')

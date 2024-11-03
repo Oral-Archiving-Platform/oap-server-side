@@ -53,14 +53,14 @@ class VideoViewSet(viewsets.ModelViewSet):
                     city, city_error = create_or_get_city(city_data)
                     if city_error:
                         raise ValueError("City creation/retrieval failed", city_error)
-                    video_data['city'] = city.id
+                    video_data['city'] = city
                     video_data['monument'] = None
                 elif monument_data:
                     monument_data['monument_image']=monument_image
                     monument, monument_error = create_or_get_monument(monument_data)
                     if monument_error:
                         raise ValueError("Monument creation/retrieval failed", monument_error)
-                    video_data['monument'] = monument.id
+                    video_data['monument'] = monument
                     video_data['city'] = None
                 else:
                     raise ValueError("Either a city or monument must be provided.")
@@ -167,7 +167,7 @@ class VideoViewSet(viewsets.ModelViewSet):
                         )                    
                     except Playlist.DoesNotExist:
                         raise ValueError("Specified playlist does not exist")
-
+                
                 return Response(video_serializer.data, status=status.HTTP_201_CREATED)
             
 
