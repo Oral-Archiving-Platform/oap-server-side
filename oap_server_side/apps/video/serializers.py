@@ -97,6 +97,11 @@ class VideoSerializer(serializers.ModelSerializer):
             if user.is_authenticated:
                 return obj.mediaID.is_liked_by_user(user)
         return False
+
+class CreateVideoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Video
+        fields = '__all__'
         
 class VideoPageSerializer(serializers.ModelSerializer):
 
