@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status
 from .permissions import IsChannelMemberOrReadOnly
 from .models import Video, Transcript, VideoSegment, City, Participant, Monument, Topic, ImportantPerson
-from .serializers import VideoSerializer, TranscriptSerializer, VideoSegmentSerializer,ParticipantSerializer,VideoPageSerializer, MonumentSerializer, CitySerializer,TopicSerializer,ImportantPersonSerializer
+from .serializers import VideoSerializer, CreateVideoSerializer, TranscriptSerializer, VideoSegmentSerializer,ParticipantSerializer,VideoPageSerializer, MonumentSerializer, CitySerializer,TopicSerializer,ImportantPersonSerializer
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from datetime import datetime
@@ -11,7 +11,7 @@ from django.db import transaction
 from .services import create_or_get_city, create_or_get_monument
 from .utils import create_or_get_important_person,create_or_get_topic
 from rest_framework.pagination import PageNumberPagination
-
+from ..playlist.models import Playlist, PlaylistMedia
 import json
 
 class VideoPageViewSet(viewsets.ModelViewSet):
@@ -40,13 +40,13 @@ class VideoViewSet(viewsets.ModelViewSet):
                 segments_with_transcripts = json.loads(request.data.get('segments', '[]'))
                 
                 media_data = video_data.get('mediaID', {})
-                city_data = video_data.get('city')
-                monument_data = video_data.get('monument')
+                city_data = video_data.get('city',{})
+                monument_data = video_data.get('monument',{})
                 topics_data = video_data.get('topics', []) 
                 important_persons_data = video_data.get('important_persons', [])
                 monument_image = request.FILES.get('monument_image')
                 city_image = request.FILES.get('city_image')
-
+                playlist_id = request.data.get('playlist','')  
 
                 if city_data:
                     city_data['city_image']=city_image
@@ -75,31 +75,38 @@ class VideoViewSet(viewsets.ModelViewSet):
                 video_data['mediaID'] = media.id
                 
                 topic_objects = []
+                topics_data = topics_data.split(',')
+                print("topics",topics_data)
                 for topic_name in topics_data:
                     topic, topic_error = create_or_get_topic(topic_name)
                     if topic_error:
                         raise ValueError("Topic creation/retrieval failed", topic_error)
-                    topic_objects.append(topic)
+                    topic_objects.append(topic.id)
+                print("topic",topic_objects)
 
                 important_person_objects = []
+                important_persons_data = important_persons_data.split(',')
+                print("impp",important_persons_data)
                 for person_name in important_persons_data:
                     person, person_error = create_or_get_important_person(person_name)
                     if person_error:
                         raise ValueError("Important person creation/retrieval failed", person_error)
-                    important_person_objects.append(person)
-
+                    important_person_objects.append(person.id)
+                print("imp",important_person_objects)
                 
-                video_serializer = VideoSerializer(data=video_data)
+                video_data['topics'] = topic_objects
+                video_data['important_persons'] = important_person_objects
+                print("monum",video_data['monument'])
+
+                video_serializer = CreateVideoSerializer(data=video_data)
 
                 if not video_serializer.is_valid():
                     raise ValueError("Video data validation failed", video_serializer.errors)
 
                 video = video_serializer.save()
                 
-                video.topics.set(topic_objects)
-                video.important_persons.set(important_person_objects)
 
-                
+
                 participant_errors = []
 
                 for participant in participants:
@@ -156,7 +163,18 @@ class VideoViewSet(viewsets.ModelViewSet):
                     else:
                         raise ValueError("Transcript data validation failed", full_transcript_serializer.errors)
 
+                if playlist_id:
+                    try:
+                        playlist = Playlist.objects.get(id=playlist_id)
 
+                        PlaylistMedia.objects.create(
+                            playlist=playlist,
+                            media=media,
+                            added_by=request.user
+                        )                    
+                    except Playlist.DoesNotExist:
+                        raise ValueError("Specified playlist does not exist")
+                
                 return Response(video_serializer.data, status=status.HTTP_201_CREATED)
             
 
