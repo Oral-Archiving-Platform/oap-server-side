@@ -104,7 +104,7 @@ class Transcript(models.Model):
     videoID= models.ForeignKey(Video, on_delete=models.CASCADE)
     videoSegmentID = models.ForeignKey(VideoSegment, on_delete=models.CASCADE, default=None,blank=True, null=True)
     transcription= models.TextField()
-    transcriptionLanguage = models.ForeignKey(OriginalLanguage, on_delete=models.CASCADE, related_name='transcripts')
+    transcriptionLanguage = models.ForeignKey(OriginalLanguage, on_delete=models.CASCADE, related_name='transcripts',null=True)
 
     def __str__(self):
         return self.title

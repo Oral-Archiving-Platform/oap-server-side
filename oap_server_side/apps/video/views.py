@@ -75,7 +75,8 @@ class VideoViewSet(viewsets.ModelViewSet):
                 video_data['mediaID'] = media.id
                 
                 topic_objects = []
-                topics_data = topics_data.split(',')
+                if isinstance(topics_data, str):
+                    topics_data = topics_data.split(',')
                 print("topics",topics_data)
                 for topic_name in topics_data:
                     topic, topic_error = create_or_get_topic(topic_name)
@@ -85,7 +86,9 @@ class VideoViewSet(viewsets.ModelViewSet):
                 print("topic",topic_objects)
 
                 important_person_objects = []
-                important_persons_data = important_persons_data.split(',')
+                if isinstance(important_persons_data, str):
+
+                    important_persons_data = important_persons_data.split(',')
                 print("impp",important_persons_data)
                 for person_name in important_persons_data:
                     person, person_error = create_or_get_important_person(person_name)
