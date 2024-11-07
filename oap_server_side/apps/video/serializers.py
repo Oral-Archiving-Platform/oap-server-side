@@ -67,6 +67,7 @@ class VideoSerializer(serializers.ModelSerializer):
     monument = MonumentSerializer(read_only=True)
     participants = ParticipantSerializer(source='participants_set', many=True, read_only=True)
     collection_name = serializers.SerializerMethodField(read_only=True)
+    collection_id = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Video
@@ -82,7 +83,15 @@ class VideoSerializer(serializers.ModelSerializer):
             representation["monument"] = MonumentSerializer(instance.monument).data
 
         return representation
-    
+    def get_collection_id(self, obj):
+        # Get the collection ID if it exists
+        try:
+            playlist_media = PlaylistMedia.objects.filter(media=obj.mediaID).first()
+            if playlist_media and playlist_media.playlist.type == '1':  # Check if it's a collection type
+                return playlist_media.playlist.id
+        except PlaylistMedia.DoesNotExist:
+            return None
+        return None
     def get_collection_name(self, obj):
         # Get the collection name if it exists
         try:

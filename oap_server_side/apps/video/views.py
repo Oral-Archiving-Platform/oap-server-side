@@ -38,6 +38,7 @@ class VideoViewSet(viewsets.ModelViewSet):
                 participants = json.loads(request.data.get('participants', '[]'))
                 transcript_data = json.loads(request.data.get('transcript', '{}'))
                 segments_with_transcripts = json.loads(request.data.get('segments', '[]'))
+                acknowledgement = video_data.get('acknowledgement', '')
                 
                 media_data = video_data.get('mediaID', {})
                 city_data = video_data.get('city',{})
@@ -67,8 +68,11 @@ class VideoViewSet(viewsets.ModelViewSet):
 
 
                 media_data['uploaderID'] = request.user.id
-
+                media_data['acknowledgement'] = acknowledgement
+                # add ack to media
+                data = request.data.get('video')  # Get the 'video' data from request
                 media, media_errors = create_media_with_category(media_data, media_data.get('categoryID'))
+
                 if media_errors:  
                     raise ValueError("Media creation failed", media_errors)
 

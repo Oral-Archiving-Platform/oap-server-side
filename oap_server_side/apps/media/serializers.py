@@ -42,7 +42,7 @@ class MediaSerializer(serializers.ModelSerializer):
         return View.objects.filter(mediaID=obj).count()
     
     def get_category_name(self, obj):
-        return obj.categoryID.name
+        return obj.categoryID.name if obj.categoryID else None
     
 
 class CategorySerializer(serializers.ModelSerializer):
