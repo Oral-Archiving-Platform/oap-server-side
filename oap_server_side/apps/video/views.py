@@ -11,6 +11,7 @@ from django.db import transaction
 from .services import create_or_get_city, create_or_get_monument
 from .utils import create_or_get_important_person,create_or_get_topic
 from rest_framework.pagination import PageNumberPagination
+from pytube import YouTube
 from ..playlist.models import Playlist, PlaylistMedia
 import json
 
@@ -48,7 +49,24 @@ class VideoViewSet(viewsets.ModelViewSet):
                 monument_image = request.FILES.get('monument_image')
                 city_image = request.FILES.get('city_image')
                 playlist_id = request.data.get('playlist','')  
-
+                # set the video duration
+                if video_data.get('videoURL'):
+                    try:
+                        yt = YouTube(video_data.get('videoURL'))
+                        
+                        # Force metadata loading by accessing streams
+                        yt.check_availability()  # Ensure the video is available
+                        _ = yt.streams  # Trigger loading of metadata
+                        
+                        # Now get the video duration
+                        if yt.length is not None:
+                            video_data['duration'] = datetime.timedelta(seconds=yt.length)
+                            print("Video duration:", video_data['duration'])
+                        else:
+                            print("Duration data not available.")
+                        
+                    except Exception as e:
+                        print(f"Error fetching video duration: {e}")
                 if city_data:
                     city_data['city_image']=city_image
                     city, city_error = create_or_get_city(city_data)

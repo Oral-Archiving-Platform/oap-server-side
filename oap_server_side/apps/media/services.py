@@ -9,9 +9,11 @@ def create_media_with_category(media_data, category_data=None):
         print("Category Name:", category_name)
         category, created = Category.objects.get_or_create(name=category_name)
         media_data['categoryID'] = category.id
-    elif isinstance(category_data, str):  # Assuming category_data can also be a string for category name
-        category, created = Category.objects.get_or_create(name=category_data)
-        media_data['categoryID'] = category.id
+    elif isinstance(category_data, str):  # Assuming category_data can also be a string for category id
+        if Category.objects.filter(id=category_data).exists():
+            media_data['categoryID'] = category_data
+        else:
+            return None, f"Category with id {category_data} does not exist"
     else:
         return None, "Invalid category data provided"
 
