@@ -135,9 +135,12 @@ SIMPLE_JWT = {
 }
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    'https://oap.yibork.site',
+    "https://ifrane.oap.yibork.site"
+
 ]
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1','18.171.236.2','oap.yibork.site']
 # If you want to allow all origins, you can use:
 # CORS_ALLOW_ALL_ORIGINS = True
 

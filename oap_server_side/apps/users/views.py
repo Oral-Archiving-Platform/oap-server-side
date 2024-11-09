@@ -86,7 +86,7 @@ class MyTokenObtainPairView(TokenObtainPairView):
                         logger.info(f"TOTP device created for user: {user.username}")
 
                     secret = base64.b32encode(totp_device.bin_key).decode('utf-8')
-                    totp_url = pyotp.totp.TOTP(secret).provisioning_uri(name=user.username, issuer_name="YourApp")
+                    totp_url = pyotp.totp.TOTP(secret).provisioning_uri(name=user.username, issuer_name="OAP")
                     qr = qrcode.make(totp_url)
                     qr_code_buffer = io.BytesIO()
                     qr.save(qr_code_buffer, 'PNG')
@@ -195,7 +195,7 @@ def generate_qr_code(request):
     secret = base64.b32encode(totp_device.bin_key).decode('utf-8')
     logger.debug(f"Encoded Secret: {secret}")
 
-    totp_url = pyotp.totp.TOTP(secret).provisioning_uri(name=user.username, issuer_name="YourApp")
+    totp_url = pyotp.totp.TOTP(secret).provisioning_uri(name=user.username, issuer_name="OAP")
     logger.debug(f"TOTP Device Config URL: {totp_url}")
 
     # Generate QR code image
