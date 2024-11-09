@@ -1,21 +1,35 @@
-- name: Deploy to Server
-  uses: appleboy/ssh-action@master
-  with:
-    host: ${{ secrets.EC2_PUBLIC_IP }}
-    username: ${{ secrets.EC2_USER }}
-    key: ${{ secrets.SSH_PRIVATE_KEY }}
-    script: |
-      # Navigate to the project directory
-      cd OAP-SERVER-SIDE
-      echo "Stashing any local changes..."
-      git stash --include-untracked || echo "No local changes to stash."
-      
-      echo "Pulling latest changes from the repository..."
-      git pull origin master
-      echo "Successfully pulled the latest changes."
+name: Deploy
 
-      echo "Checking if deploy script is executable..."
-      chmod +x ./scripts/deploy.sh
+on:
+  push:
+    branches:
+      - master
 
-      echo "Running deploy script..."
-      ./scripts/deploy.sh
+jobs:
+  deploy:
+    name: Deploy to AWS EC2
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_PUBLIC_IP }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Navigate to the project directory
+            cd OAP-SERVER-SIDE
+            echo "Stashing any local changes..."
+            git stash --include-untracked || echo "No local changes to stash."
+            
+            echo "Pulling latest changes from the repository..."
+            git pull origin master
+            echo "Successfully pulled the latest changes."
+
+            echo "Checking if deploy script is executable..."
+            chmod +x ./scripts/deploy.sh
+
+            echo "Running deploy script..."
+            ./scripts/deploy.sh
