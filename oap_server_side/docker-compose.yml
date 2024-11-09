@@ -1,17 +1,10 @@
 version: '3.8'
 
 services:
-  web:
-    build: .
-    image: version: "3.7"
-
-services:
   backend:
-    container_name: yassine/my_django_app:latest
+    container_name: my_django_app
     env_file: .env
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    build: .
     ports:
       - "8000:8000"
     networks:
@@ -36,24 +29,15 @@ services:
     volumes:
       - postgres:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
 
 volumes:
   postgres:
+  db_data:
 
 networks:
   app:
     driver: bridge
-    ports:
-      - "8000:8000"
-    volumes:
-      - .:/app
-      - ./media:/app/media
-      - db_data:/app/database  # Map named volume to a directory
-
-volumes:
-  db_data:
-    driver: local
