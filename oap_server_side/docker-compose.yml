@@ -3,7 +3,50 @@ version: '3.8'
 services:
   web:
     build: .
-    image: yassine/my_django_app:latest
+    image: version: "3.7"
+
+services:
+  backend:
+    container_name: yassine/my_django_app:latest
+    env_file: .env
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    networks:
+      - app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    env_file: .env
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - app
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres:
+
+networks:
+  app:
+    driver: bridge
     ports:
       - "8000:8000"
     volumes:
