@@ -25,7 +25,7 @@ jobs:
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_PUBLIC_IP }}
-          username: ec2-user  # or use the appropriate user for your EC2 instance (e.g., ubuntu)
+          username: ${{ secrets.EC2_USER }}
           key: ~/.ssh/deploy_key
           script: |
             # Navigate to the project directory
