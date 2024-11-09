@@ -39,3 +39,4 @@ jobs:
 
             echo "Running deploy script..."
             ./scripts/deploy.sh
+            echo "Successfully deployed the application."
