@@ -138,7 +138,9 @@ CORS_ALLOWED_ORIGINS = [
     'https://oap.yibork.site',
     "https://ifrane.oap.yibork.site"
 ]
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+
+CORS_ALLOW_ALL_ORIGINS = False
 CSRF_TRUSTED_ORIGINS = ['http://localhost:3000','https://oap.yibork.site','https://ifrane.oap.yibork.site']
 
 
