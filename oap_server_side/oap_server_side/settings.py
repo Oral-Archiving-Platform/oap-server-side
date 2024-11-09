@@ -133,11 +133,7 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    'https://oap.yibork.site',
-    "https://ifrane.oap.yibork.site"
-]
+CORS_ALLOWED_ALL_ORIGINS = True
 CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 
 CORS_ALLOW_ALL_ORIGINS = False
