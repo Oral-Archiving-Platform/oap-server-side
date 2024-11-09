@@ -13,6 +13,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - media_data:/app/media  # Mount a volume for media files
 
   postgres:
     image: postgres:latest
@@ -37,6 +39,7 @@ services:
 volumes:
   postgres:
   db_data:
+  media_data:  # Define a named volume for media files
 
 networks:
   app:

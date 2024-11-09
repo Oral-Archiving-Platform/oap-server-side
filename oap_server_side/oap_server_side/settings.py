@@ -60,7 +60,7 @@ INSTALLED_APPS = [
 ]
 import os
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = '/app/media'
 
 SITE_ID = 1
 
@@ -138,7 +138,8 @@ CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 
 CORS_ALLOW_ALL_ORIGINS = False
 CSRF_TRUSTED_ORIGINS = ['http://localhost:3000','https://oap.yibork.site','https://ifrane.oap.yibork.site']
-
+CORS_ALLOW_CREDENTIALS = True
+CORS_URLS_REGEX = r'^/media/.*$'
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1','18.171.236.2','oap.yibork.site']
 # If you want to allow all origins, you can use:
