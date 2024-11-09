@@ -26,6 +26,8 @@ docker-compose up -d
 # Log Docker container status
 echo "Docker containers are up and running. Current container status:"
 docker-compose ps
+# run the migrations
+python manage.py migrate
 
 # Optional: If you want to check logs for debugging
 # echo "Displaying the last 50 lines of logs for each container..."
