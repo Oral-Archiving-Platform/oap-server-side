@@ -9,4 +9,8 @@ services:
     volumes:
       - .:/app
       - ./media:/app/media
-      - ./db.sqlite3:/app/db.sqlite3
+      - db_data:/app/db.sqlite3  # Use a named volume for the database
+
+volumes:
+  db_data:
+    driver: local
