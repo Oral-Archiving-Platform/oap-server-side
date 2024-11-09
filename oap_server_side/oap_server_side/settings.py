@@ -133,13 +133,16 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
-CORS_ALLOWED_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    'https://oap.yibork.site',
+    "https://ifrane.oap.yibork.site"
+]
 CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 
 CORS_ALLOW_ALL_ORIGINS = False
 CSRF_TRUSTED_ORIGINS = ['http://localhost:3000','https://oap.yibork.site','https://ifrane.oap.yibork.site']
-CORS_ALLOW_CREDENTIALS = True
-CORS_URLS_REGEX = r'^/media/.*$'
+
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1','18.171.236.2','oap.yibork.site']
 # If you want to allow all origins, you can use:
