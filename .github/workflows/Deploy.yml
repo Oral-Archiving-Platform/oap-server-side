@@ -20,6 +20,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             # Navigate to the project directory
+            # print the current working directory and list the files in it
+            pwd && ls -l
+          
             cd oap-server-side
             echo "Stashing any local changes..."
             git stash --include-untracked || echo "No local changes to stash."
