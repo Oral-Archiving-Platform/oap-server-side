@@ -137,7 +137,6 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     'https://oap.yibork.site',
     "https://ifrane.oap.yibork.site"
-
 ]
 CORS_ALLOW_ALL_ORIGINS = True
 CSRF_TRUSTED_ORIGINS = ['http://localhost:3000','https://oap.yibork.site','https://ifrane.oap.yibork.site']
