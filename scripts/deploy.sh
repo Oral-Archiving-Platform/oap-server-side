@@ -32,4 +32,4 @@ docker-compose ps
 # docker-compose logs --tail=50
 
 # Finish deployment
-echo "Deployment complete. Your application is running!"
+echo "Deployment complete. Your application is running"
