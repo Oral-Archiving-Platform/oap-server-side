@@ -14,7 +14,7 @@ echo "Deploying from directory: $(pwd)"
 
 # Ensure the latest changes are pulled
 echo "Pulling the latest changes from the git repository..."
-git pull origin main
+git pull --ff-only origin master
 echo "Successfully pulled the latest changes."
 
 # Build Docker images and start containers
