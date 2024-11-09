@@ -62,6 +62,7 @@ import os
 MEDIA_URL = '/media/'
 MEDIA_ROOT = '/app/media'
 
+# 
 SITE_ID = 1
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
