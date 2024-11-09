@@ -9,7 +9,7 @@ services:
     volumes:
       - .:/app
       - ./media:/app/media
-      - db_data:/app/db.sqlite3  # Use a named volume for the database
+      - db_data:/app/database  # Map named volume to a directory
 
 volumes:
   db_data:
