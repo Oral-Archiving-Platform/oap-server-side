@@ -15,7 +15,7 @@ jobs:
       - name: Deploy to Server
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.EC2_PUBLIC_IP }}
+          host: oap.yibork.site
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
