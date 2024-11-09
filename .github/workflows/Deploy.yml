@@ -34,7 +34,7 @@ jobs:
             git stash --include-untracked || echo "No local changes to stash."
             
             echo "Pulling latest changes from the repository..."
-            git pull origin main
+            git pull origin master
             echo "Successfully pulled the latest changes."
 
             echo "Checking if deploy script is executable..."
