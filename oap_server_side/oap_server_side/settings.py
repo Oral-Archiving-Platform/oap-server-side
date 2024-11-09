@@ -139,6 +139,9 @@ CORS_ALLOWED_ORIGINS = [
     "https://ifrane.oap.yibork.site"
 
 ]
+CORS_ALLOW_ALL_ORIGINS = True
+CSRF_TRUSTED_ORIGINS = ['localhost:3000','oap.yibork.site','ifrane.oap.yibork.site']
+
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1','18.171.236.2','oap.yibork.site']
 # If you want to allow all origins, you can use:
